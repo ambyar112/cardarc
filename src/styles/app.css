@@ -1,0 +1,194 @@
+/* ArcCards App Theme — matches Landing page aesthetic */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --cyan:   #00f5ff;
+  --violet: #9400e4;
+  --gold:   #ffdb40;
+  --void:   #050508;
+  --surface: #1f1f23;
+  --surface-high: #2a292e;
+  --text:   #e5e1e7;
+  --muted:  #b9caca;
+  --outline: #3a494a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background-color: var(--void);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+.sora  { font-family: 'Sora', sans-serif; }
+.jbm   { font-family: 'JetBrains Mono', monospace; }
+
+/* Glass */
+.glass {
+  backdrop-filter: blur(20px);
+  background: rgba(31, 31, 35, 0.45);
+  border: 1px solid rgba(0, 245, 255, 0.1);
+}
+.glass:hover { border-color: rgba(0,245,255,0.25); }
+
+/* Glow borders by tier */
+.glow-legendary { box-shadow: 0 0 25px rgba(255,219,64,0.3);  border-top: 2px solid #ffdb40; }
+.glow-epic      { box-shadow: 0 0 20px rgba(148,0,228,0.3);   border-top: 2px solid #9400e4; }
+.glow-rare      { box-shadow: 0 0 15px rgba(0,245,255,0.25);  border-top: 2px solid #00f5ff; }
+.glow-common    { box-shadow: 0 0 10px rgba(185,202,202,0.1); border-top: 2px solid #3a494a; }
+
+/* Tier badges */
+.badge-legendary { background: rgba(255,219,64,0.12); color: #ffdb40; border: 1px solid rgba(255,219,64,0.3); }
+.badge-epic      { background: rgba(148,0,228,0.12);  color: #e3b5ff; border: 1px solid rgba(148,0,228,0.3); }
+.badge-rare      { background: rgba(0,245,255,0.12);  color: #00f5ff; border: 1px solid rgba(0,245,255,0.3); }
+.badge-common    { background: rgba(255,255,255,0.05); color: #849495; border: 1px solid rgba(255,255,255,0.1); }
+
+/* Buttons */
+.btn-primary {
+  background: var(--cyan);
+  color: #003739;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.btn-primary:hover { box-shadow: 0 0 30px rgba(0,245,255,0.4); transform: translateY(-1px); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--cyan);
+  border: 1px solid rgba(0,245,255,0.4);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.btn-outline:hover { background: rgba(0,245,255,0.1); box-shadow: 0 0 20px rgba(0,245,255,0.2); }
+
+.btn-gold {
+  background: linear-gradient(135deg, #ffdb40, #e9c400);
+  color: #221b00;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.btn-gold:hover { box-shadow: 0 0 30px rgba(255,219,64,0.4); transform: translateY(-1px); }
+.btn-gold:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Card 3D hover */
+.card-3d {
+  transition: all 0.35s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transform-style: preserve-3d;
+}
+.card-3d:hover { transform: translateY(-6px) rotateX(4deg) rotateY(-4deg); }
+
+/* Scan line animation */
+.scan-line {
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, transparent, #00f5ff, transparent);
+  position: absolute; top: 0; left: 0;
+  animation: scan 4s linear infinite;
+  pointer-events: none;
+}
+@keyframes scan {
+  0%   { top: -10%; opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { top: 110%; opacity: 0; }
+}
+
+/* Grid background */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(0,245,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,255,0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* ── Mobile & Performance fixes ─────────────────────────────── */
+@media (max-width: 768px) {
+  /* Disable heavy 3D animations on mobile for performance */
+  .animated-mesh { display: none; }
+  .card-3d:hover { transform: none; }
+  /* Improve tap feedback instead of hover */
+  .card-3d:active { transform: translateY(-3px) scale(0.98); transition: transform 0.1s; }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animated-mesh,
+  .scan-line,
+  .card-3d,
+  .card-3d:hover,
+  .btn-primary:hover,
+  .btn-gold:hover { animation: none !important; transform: none !important; transition: none !important; }
+}
+
+/* Touch-friendly tap states for interactive cards */
+.pack-card-touch:active {
+  transform: scale(0.97);
+  transition: transform 0.1s;
+}
+::-webkit-scrollbar-track { background: #050508; }
+::-webkit-scrollbar-thumb { background: rgba(0,245,255,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,245,255,0.35); }
+
+/* Input */
+.arc-input {
+  background: rgba(31,31,35,0.6);
+  border: 1px solid rgba(0,245,255,0.15);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  transition: border-color 0.2s;
+}
+.arc-input::placeholder { color: #849495; }
+.arc-input:focus { outline: none; border-color: rgba(0,245,255,0.5); box-shadow: 0 0 10px rgba(0,245,255,0.1); }
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(5,5,8,0.92);
+  backdrop-filter: blur(16px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+
+/* Pity / progress bars */
+.progress-bar {
+  height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* Animated mesh */
+.animated-mesh {
+  position: fixed; inset: 0;
+  background:
+    linear-gradient(rgba(0,245,255,0.025) 1px, transparent 1px) 0 0 / 100px 100px,
+    linear-gradient(90deg, rgba(0,245,255,0.025) 1px, transparent 1px) 0 0 / 100px 100px;
+  transform: rotateX(60deg) translateY(-200px) translateZ(-500px);
+  transform-origin: top;
+  animation: mesh-move 20s linear infinite;
+  z-index: 0;
+  mask-image: radial-gradient(ellipse at 50% 50%, black 20%, transparent 80%);
+  pointer-events: none;
+}
+@keyframes mesh-move {
+  from { background-position: 0 0; }
+  to   { background-position: 0 1000px; }
+}

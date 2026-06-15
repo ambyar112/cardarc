@@ -1,0 +1,36 @@
+# ArcCards — TCG NFT Gacha on Arc Testnet
+# https://cardarc.vercel.app
+
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# AI Crawlers — allow indexing, disallow training
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /api/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /api/
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+# Content Signals — AI usage preferences
+Content-Signal: ai-train=no, search=yes, ai-input=no
+
+Sitemap: https://cardarc.vercel.app/sitemap.xml

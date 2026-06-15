@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>ArcCards — Anime TCG Gacha on Arc Testnet</title>
+    <meta name="description" content="Pull ultra-rare Pokémon, Yu-Gi-Oh!, and Dragon Ball Super cards on Arc Testnet." />
+    <meta name="theme-color" content="#050508" />
+
+    <!-- Preconnect ke origins paling kritis -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://images.ygoprodeck.com" />
+    <link rel="dns-prefetch" href="https://assets.tcgdex.net" />
+    <link rel="dns-prefetch" href="https://www.dbs-cardgame.com" />
+
+    <!-- Fonts — NON-RENDER-BLOCKING dengan font-display swap untuk CLS -->
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Share+Tech+Mono&family=Plus+Jakarta+Sans:wght@400;500&family=Orbitron:wght@700;800&display=swap&text-rendering=optimizeSpeed"
+      media="print" onload="this.media='all'" />
+    <noscript>
+      <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Share+Tech+Mono&family=Plus+Jakarta+Sans:wght@400;500&family=Orbitron:wght@700;800&display=swap" />
+    </noscript>
+
+    <!-- Material Icons — fully deferred -->
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap"
+      media="print" onload="this.media='all'" />
+
+    <!-- Critical CSS inline — prevent render-blocking -->
+    <style>
+      *,::before,::after{box-sizing:border-box}
+      html{height:100%}
+      body{margin:0;background:#07070F;color:#e5e0ed;overflow-x:hidden;-webkit-font-smoothing:antialiased;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+      #root{min-height:100vh}
+      /* Prevent layout shift pada font load */
+      h1,h2,h3,h4,h5,h6{font-family:'Rajdhani',sans-serif;letter-spacing:.04em}
+      .font-mono,code{font-family:'Share Tech Mono',monospace;font-variant-numeric:tabular-nums}
+      /* Prevent flash of unstyled content */
+      .glass{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+    </style>
+  </head>
+  <body class="dark">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

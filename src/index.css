@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#07070F] text-on-surface font-body antialiased overflow-x-hidden;
+    background-image:
+      radial-gradient(circle at 10% 40%, rgba(108,92,231,0.05) 0%, transparent 60%),
+      radial-gradient(circle at 90% 70%, rgba(71,214,255,0.04) 0%, transparent 60%);
+  }
+
+  /* Prevent CLS from font loading — size-adjust reserves space before font loads */
+  @font-face {
+    font-family: 'Rajdhani';
+    font-display: swap;
+    size-adjust: 105%;
+  }
+  @font-face {
+    font-family: 'Plus Jakarta Sans';
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Share Tech Mono';
+    font-display: swap;
+  }
+
+  /* Rajdhani untuk semua heading */
+  h1, h2, h3, h4, h5, h6,
+  .font-display, .font-bold.text-2xl, .font-bold.text-xl,
+  .sora {
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.04em;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Share Tech Mono untuk semua monospace/badge */
+  .font-mono, code, pre,
+  .jbm {
+    font-family: 'Share Tech Mono', monospace;
+    font-variant-numeric: tabular-nums; /* anti-jitter untuk angka */
+    letter-spacing: 0.02em;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Plus Jakarta Sans untuk body */
+  .font-body, p, span, button, input, label {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  .glass { @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08]; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+
+  .btn-primary {
+    background: linear-gradient(135deg,#6c5ce7,rgba(108,92,231,0.8));
+    box-shadow: 0 4px 15px rgba(108,92,231,0.4);
+    @apply border border-primary/30 transition-all duration-300 text-on-primary-container;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .btn-primary:hover { box-shadow: 0 6px 20px rgba(108,92,231,0.6); @apply -translate-y-0.5; }
+
+  /* Neon text glow untuk heading penting */
+  .text-glow {
+    text-shadow: 0 0 20px rgba(198,191,255,0.5);
+  }
+  .text-neon-cyan {
+    text-shadow: 0 0 12px rgba(0,245,255,0.6), 0 0 24px rgba(0,245,255,0.3);
+  }
+  .text-neon-gold {
+    text-shadow: 0 0 12px rgba(248,189,69,0.6), 0 0 24px rgba(248,189,69,0.3);
+  }
+
+  /* Card glows */
+  .glow-legendary { box-shadow: 0 0 30px rgba(244,185,66,0.25); border-top: 2px solid #f8bd45; }
+  .glow-epic      { box-shadow: 0 0 30px rgba(108,92,231,0.25); border-top: 2px solid #c6bfff; }
+  .glow-rare      { box-shadow: 0 0 20px rgba(71,214,255,0.2);  border-top: 2px solid #47d6ff; }
+  .glow-common    { box-shadow: 0 0 15px rgba(146,142,160,0.1); border-top: 2px solid #928ea0; }
+
+  /* 3D card — pakai transform saja, GPU composited */
+  .card-3d { transition: transform 0.3s ease; transform-style: preserve-3d; will-change: transform; }
+
+  /* Legendary shimmer — opacity only, GPU composited */
+  @keyframes legendaryShimmer {
+    0%, 100% { opacity: 0.08; }
+    50%       { opacity: 0.18; }
+  }
+  .shimmer-legendary {
+    animation: legendaryShimmer 2s ease-in-out infinite;
+    will-change: opacity;
+  }
+}
+
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:rgba(255,255,255,0.01); border-radius:4px; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.12); border-radius:4px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.25); }
+w3m-modal { z-index:9999 !important; }
+
+/* ── Mobile touch improvements ──────────────────────────────── */
+/* Prevent text selection on tap-hold for interactive elements */
+button, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+/* Input zoom prevention on iOS — font-size must be ≥ 16px to prevent auto-zoom */
+input[type="text"], input[type="number"], input[type="search"], textarea {
+  font-size: 16px !important;
+}
+/* Safe area insets for notched phones */
+.safe-top    { padding-top:    env(safe-area-inset-top);    }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* ── Reduce motion for accessibility ────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
