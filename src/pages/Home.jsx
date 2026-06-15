@@ -253,7 +253,7 @@ export default function Home() {
                      color:'#00f5ff', letterSpacing:'0.15em', backdropFilter:'blur(10px)' }}>
             <span className="w-1.5 h-1.5 rounded-full animate-pulse"
               style={{ background:'#00f5ff', boxShadow:'0 0 8px #00f5ff' }} />
-            SEASON 4 LIVE — PKM × YGO × DBS
+            SEASON 1 LIVE — PKM × YGO × DBS
           </div>
 
           {/* Headline with glitch effect */}

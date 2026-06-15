@@ -137,7 +137,7 @@ function PurchaseModal({ listing, onClose, onSuccess }) {
               <button onClick={handleBuy} className="flex-1 py-2.5 rounded-xl font-mono font-bold text-xs" style={{ background:tc, color:'#07070F' }}>Confirm Purchase</button>
             </div>
           </>)}
-          {step === 'buying' && <div className="flex flex-col items-center gap-3 py-6"><div className="w-10 h-10 border-2 border-white/10 rounded-full animate-spin" style={{ borderTopColor:tc }} /><p className="font-mono text-sm" style={{ color:tc }}>Processing...</p></div>}
+          {step === 'buying' && <div className="flex items-center justify-center gap-2 py-4"><p className="font-mono text-sm" style={{ color:tc }}>Processing...</p></div>}
           {step === 'done' && <div className="flex flex-col items-center gap-3 py-4"><span className="text-4xl">🎉</span><p className="font-mono font-bold text-sm" style={{ color:'#4ade80' }}>Berhasil!</p>{txHash && <a href={`https://testnet.arcscan.app/tx/${txHash}`} target="_blank" rel="noreferrer" className="font-mono text-[10px] underline" style={{ color:'#16e6ff' }}>View on ArcScan ↗</a>}<button onClick={onClose} className="px-8 py-2.5 rounded-xl font-mono font-bold text-xs" style={{ background:tc, color:'#07070F' }}>Done</button></div>}
           {step === 'error' && <div className="flex flex-col items-center gap-3 py-4"><span className="text-4xl">❌</span><p className="font-mono text-[10px] text-center" style={{ color:'#9aa3b2' }}>{errMsg}</p><button onClick={() => setStep('confirm')} className="px-8 py-2.5 rounded-xl font-mono font-bold text-xs" style={{ background:'rgba(255,255,255,.1)', color:'#eef2ff' }}>Try Again</button></div>}
         </div>
@@ -188,7 +188,7 @@ function EditPriceModal({ listing, onClose, onSuccess }) {
               <button onClick={handleUpdate} className="flex-1 py-2 rounded-xl font-mono font-bold text-xs" style={{ background:tc, color:'#07070F' }}>Update</button>
             </div>
           </>)}
-          {step === 'loading' && <div className="flex items-center justify-center py-4"><div className="w-8 h-8 border-2 border-white/10 rounded-full animate-spin" style={{ borderTopColor:tc }} /></div>}
+          {step === 'loading' && <div className="flex items-center justify-center py-3"><p className="font-mono text-xs" style={{ color:tc }}>Loading...</p></div>}
           {step === 'done' && <div className="flex flex-col items-center gap-2 py-3"><span className="text-2xl">✅</span><p className="font-mono text-xs" style={{ color:'#4ade80' }}>Updated!</p><button onClick={onClose} className="px-6 py-1.5 rounded-xl font-mono font-bold text-xs" style={{ background:tc, color:'#07070F' }}>Done</button></div>}
         </div>
       </div>
@@ -203,6 +203,7 @@ function ListingCard({ listing, address, onBuy, onCancel, onEdit, cancelingId })
   const priceEth = parseFloat(formatEther(BigInt(listing.price))).toFixed(4)
   const displayName = listing.card_name && listing.card_name !== listing.cardId
     ? listing.card_name : formatCardIdDisplay(listing.cardId)
+  const isCanceling = cancelingId === listing.listingId
 
   // Construct fallback image from cardId
   const cid = listing.cardId || ''
@@ -229,7 +230,12 @@ function ListingCard({ listing, address, onBuy, onCancel, onEdit, cancelingId })
 
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col"
-      style={{ background:TIER_BG[listing.tier]||'rgba(255,255,255,.02)', border:`1px solid ${tc}25`, transition:'all .2s' }}
+      style={{
+        background:TIER_BG[listing.tier]||'rgba(255,255,255,.02)',
+        border:`1px solid ${tc}25`,
+        opacity: isCanceling ? 0.4 : 1,
+        transition: 'opacity .15s',
+      }}
       onMouseEnter={e=>e.currentTarget.style.borderColor=`${tc}60`}
       onMouseLeave={e=>e.currentTarget.style.borderColor=`${tc}25`}>
 
@@ -389,7 +395,11 @@ export default function Marketplace() {
   async function handleCancel(listing) {
     setCancelingId(listing.listingId)
     const res = await cancelListing(listing.listingId)
-    if (res.success) { await markListingCancelled(listing.listingId); await loadListings() }
+    if (res.success) {
+      await markListingCancelled(listing.listingId)
+      // Remove from local state immediately - no reload flash
+      setListings(prev => prev.filter(l => l.listingId !== listing.listingId))
+    }
     setCancelingId(null)
   }
 
@@ -447,7 +457,7 @@ export default function Marketplace() {
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 glass px-4 py-2 rounded-full border border-green-500/20 text-xs">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-green-400" />
             <span className="font-mono text-green-400">On-chain • Arc Test</span>
           </div>
           <button onClick={loadListings} className="w-8 h-8 flex items-center justify-center rounded-full glass border border-white/10" style={{ color:'#9aa3b2' }}
@@ -469,9 +479,8 @@ export default function Marketplace() {
           ))}
         </div>
         {loadingL ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-3 text-on-surface-variant">
-            <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
-            <p className="font-mono text-xs">Loading on-chain listings...</p>
+          <div className="flex items-center justify-center gap-2 py-8">
+            <span className="font-mono text-xs text-on-surface-variant">Loading...</span>
           </div>
         ) : filteredListings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-6">
@@ -560,9 +569,8 @@ export default function Marketplace() {
         )}
 
         {myCardsLoading ? (
-          <div className="flex items-center justify-center py-24 gap-3 text-on-surface-variant">
-            <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
-            <p className="font-mono text-xs">Loading koleksi kamu...</p>
+          <div className="flex items-center justify-center gap-2 py-8">
+            <span className="font-mono text-xs text-on-surface-variant">Loading...</span>
           </div>
         ) : myCards.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -619,7 +627,7 @@ export default function Marketplace() {
             </div>
           </div>
           {tradeLoading ? (
-            <div className="flex items-center justify-center py-16 gap-3 text-on-surface-variant"><span className="material-symbols-outlined text-2xl animate-spin">refresh</span><span className="font-mono text-xs">Loading...</span></div>
+            <div className="flex items-center justify-center gap-2 py-8 text-on-surface-variant"><span className="font-mono text-xs">Loading...</span></div>
           ) : filteredTrades.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-on-surface-variant"><span className="text-3xl">📭</span><p className="font-mono text-xs">Belum ada transaksi.</p></div>
           ) : (

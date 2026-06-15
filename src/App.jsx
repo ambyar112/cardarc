@@ -1,26 +1,14 @@
 import { Routes, Route } from 'react-router-dom'
-import { Suspense, lazy } from 'react'
 import Header from './components/Header'
 import AppLayout from './components/AppLayout'
-
-// Lazy load semua halaman — hanya load saat dibutuhkan
-const Home        = lazy(() => import('./pages/Home'))
-const Gacha       = lazy(() => import('./pages/Gacha'))
-const Collection  = lazy(() => import('./pages/Collection'))
-const Marketplace = lazy(() => import('./pages/Marketplace'))
-const Leaderboard = lazy(() => import('./pages/Leaderboard'))
-const Faucet      = lazy(() => import('./pages/Faucet'))
-const Profile     = lazy(() => import('./pages/Profile'))
-const Settings    = lazy(() => import('./pages/Settings'))
-
-// Loading spinner
-function PageLoader() {
-  return (
-    <div className="flex items-center justify-center min-h-[60vh]" role="status" aria-label="Loading page">
-      <div className="w-8 h-8 border-2 border-tertiary/20 border-t-tertiary rounded-full animate-spin" />
-    </div>
-  )
-}
+import Home from './pages/Home'
+import Gacha from './pages/Gacha'
+import Collection from './pages/Collection'
+import Marketplace from './pages/Marketplace'
+import Leaderboard from './pages/Leaderboard'
+import Faucet from './pages/Faucet'
+import Profile from './pages/Profile'
+import Settings from './pages/Settings'
 
 export default function App() {
   return (
@@ -36,19 +24,17 @@ export default function App() {
 
       {/* pb-16 md:pb-0 = space for mobile bottom nav bar */}
       <main id="main-content" className="relative z-10 pb-16 md:pb-0">
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/"            element={<Home />} />
-            <Route path="/home"        element={<Home />} />
-            <Route path="/gacha"       element={<Gacha />} />
-            <Route path="/collection"  element={<Collection />} />
-            <Route path="/marketplace" element={<Marketplace />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/faucet"      element={<Faucet />} />
-            <Route path="/profile"     element={<Profile />} />
-            <Route path="/settings"    element={<Settings />} />
-          </Routes>
-        </Suspense>
+        <Routes>
+          <Route path="/"            element={<Home />} />
+          <Route path="/home"        element={<Home />} />
+          <Route path="/gacha"       element={<Gacha />} />
+          <Route path="/collection"  element={<Collection />} />
+          <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/faucet"      element={<Faucet />} />
+          <Route path="/profile"     element={<Profile />} />
+          <Route path="/settings"    element={<Settings />} />
+        </Routes>
       </main>
 
       <footer
@@ -58,11 +44,10 @@ export default function App() {
         <span className="sora text-lg font-extrabold italic" style={{ color: '#e9feff' }}>ARCCARDS</span>
         <nav aria-label="Footer navigation" className="flex gap-6">
           {[
-            { label: 'Docs',    href: '#' },
-            { label: 'Discord', href: '#' },
-            { label: 'Twitter', href: '#' },
+            { label: 'Docs', href: '#' },
+            { label: 'X',    href: 'https://x.com/ShafiqqMu' },
           ].map(l => (
-            <a key={l.label} href={l.href}
+            <a key={l.label} href={l.href} target={l.href.startsWith('http') ? '_blank' : undefined} rel={l.href.startsWith('http') ? 'noreferrer' : undefined}
               aria-label={l.label}
               className="jbm text-[10px] uppercase tracking-widest transition-colors"
               style={{ color: '#849495' }}

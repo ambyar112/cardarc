@@ -97,20 +97,20 @@ export default function Header() {
 
   return (
     <>
-    <header className="fixed top-0 w-full z-50"
-      style={{ background: 'rgba(5,5,8,0.75)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(0,245,255,0.1)' }}>
+    <header className="fixed top-0 w-full z-50 header-bg"
+      style={{ backdropFilter: 'blur(20px)' }}>
       <div className="flex justify-between items-center px-4 md:px-12 h-14 md:h-16">
 
         {/* Logo */}
         <button onClick={() => navigate('/')}
-          className="sora text-xl font-extrabold italic tracking-tighter"
-          style={{ color: '#e9feff' }}>
+          className="sora text-xl font-extrabold italic tracking-tighter logo-text"
+          style={{ color: 'var(--text-primary)' }}>
           ARCCARDS
         </button>
 
         {/* Nav */}
-        <nav className="hidden md:flex items-center gap-1"
-          style={{ background: 'rgba(5,5,8,0.6)', border: '1px solid rgba(0,245,255,0.08)', borderRadius: 8, padding: '4px' }}>
+        <nav className="hidden md:flex items-center gap-1 nav-pill"
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '4px' }}>
           {NAV.map(n => {
             const active = pathname === n.path
             return (
@@ -166,37 +166,35 @@ export default function Header() {
 
             {/* Profile dropdown */}
             {profileMenu && isConnected && (
-              <div className="absolute right-0 top-12 w-64 rounded-xl overflow-hidden z-50"
-                style={{ background: 'rgba(12,12,18,0.98)', border: '1px solid rgba(0,245,255,0.15)', boxShadow: '0 20px 60px rgba(0,0,0,0.85)' }}>
+              <div className="absolute right-0 top-12 w-64 rounded-xl overflow-hidden z-50 dropdown-bg"
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
 
                 {/* Header */}
-                <div className="px-4 py-4 flex items-center gap-3"
-                  style={{ borderBottom: '1px solid rgba(0,245,255,0.08)', background: 'rgba(0,245,255,0.03)' }}>
+                <div className="px-4 py-4 flex items-center gap-3 dropdown-header"
+                  style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--card-bg)' }}>
                   <Avatar address={address} size={40} />
                   <div className="flex-1 min-w-0">
-                    <p className="jbm text-xs font-bold truncate" style={{ color: '#e5e1e7' }}>Collector</p>
-                    <p className="jbm text-[10px] truncate" style={{ color: '#00f5ff' }}>{shortAddr(address)}</p>
+                    <p className="jbm text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>Collector</p>
+                    <p className="jbm text-[10px] truncate" style={{ color: 'var(--accent-cyan)' }}>{shortAddr(address)}</p>
                   </div>
                   <button
                     onClick={() => navigator.clipboard.writeText(address || '')}
                     className="jbm text-[8px] px-2 py-1 rounded flex-shrink-0"
-                    style={{ background: 'rgba(0,245,255,0.08)', color: '#9aa3b2', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    style={{ background: 'var(--card-bg)', color: 'var(--text-muted)', border: '1px solid var(--border-color)' }}>
                     COPY
                   </button>
                 </div>
 
                 {/* Profile & Settings */}
-                <div className="py-1" style={{ borderBottom: '1px solid rgba(0,245,255,0.08)' }}>
+                <div className="py-1 dropdown-divider" style={{ borderBottom: '1px solid var(--border-color)' }}>
                   {[
                     { icon: '🎴', label: 'View Profile', path: '/profile' },
                     { icon: '⚙️', label: 'Settings',     path: '/settings' },
                   ].map(a => (
                     <button key={a.label}
                       onClick={() => { navigate(a.path); setProfileMenu(false) }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider transition-colors"
-                      style={{ color: '#849495' }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#e5e1e7'; e.currentTarget.style.background = 'rgba(0,245,255,0.04)' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = '#849495'; e.currentTarget.style.background = 'transparent' }}>
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider transition-colors dropdown-item"
+                      style={{ color: 'var(--text-muted)' }}>
                       <span>{a.icon}</span> {a.label}
                     </button>
                   ))}
@@ -206,18 +204,14 @@ export default function Header() {
                 <div className="py-1">
                   <button
                     onClick={() => { open(); setProfileMenu(false) }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider transition-colors"
-                    style={{ color: '#849495' }}
-                    onMouseEnter={e => { e.currentTarget.style.color = '#e5e1e7'; e.currentTarget.style.background = 'rgba(0,245,255,0.04)' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = '#849495'; e.currentTarget.style.background = 'transparent' }}>
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider transition-colors dropdown-item"
+                    style={{ color: 'var(--text-muted)' }}>
                     🔑 Wallet Settings
                   </button>
                   <button
                     onClick={() => { debugWalletState(); setProfileMenu(false) }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider transition-colors"
-                    style={{ color: '#849495' }}
-                    onMouseEnter={e => { e.currentTarget.style.color = '#00f5ff'; e.currentTarget.style.background = 'rgba(0,245,255,0.04)' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = '#849495'; e.currentTarget.style.background = 'transparent' }}>
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider transition-colors dropdown-item"
+                    style={{ color: 'var(--text-muted)' }}>
                     🔍 Debug Wallet
                   </button>
                   <button
@@ -237,16 +231,11 @@ export default function Header() {
           {!isConnected && (
             <div className="flex items-center gap-1">
               <button onClick={() => open()}
-                className="jbm text-[11px] uppercase tracking-wider px-4 py-2 transition-all flex items-center gap-2"
+                className="jbm text-[11px] uppercase tracking-wider px-4 py-2 transition-all flex items-center gap-2 connect-wallet"
                 style={{
-                  background: 'rgba(0,245,255,0.08)',
-                  color: '#00f5ff',
-                  border: '1px solid rgba(0,245,255,0.3)',
                   borderRadius: 6,
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,245,255,0.6)'; e.currentTarget.style.background = 'rgba(0,245,255,0.12)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,245,255,0.3)'; e.currentTarget.style.background = 'rgba(0,245,255,0.08)' }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#00f5ff' }} />
+                }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent-cyan)' }} />
                 Connect Wallet
               </button>
               {showReconnectButton && (
@@ -321,11 +310,9 @@ export default function Header() {
 
     {/* ── Mobile Bottom Navigation Bar ── */}
     {/* Visible only on mobile (md:hidden), sticky at bottom */}
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around"
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around mobile-nav"
       style={{
-        background: 'rgba(5,5,8,0.95)',
         backdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(0,245,255,0.1)',
         paddingBottom: 'env(safe-area-inset-bottom)',
         height: 'calc(56px + env(safe-area-inset-bottom))',
       }}>
@@ -334,16 +321,16 @@ export default function Header() {
         return (
           <button key={n.path}
             onClick={() => navigate(n.path)}
-            className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all"
-            style={{ color: active ? '#00f5ff' : '#849495', WebkitTapHighlightColor: 'transparent' }}>
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all ${active ? 'mobile-nav-item-active' : 'mobile-nav-item'}`}
+            style={{ WebkitTapHighlightColor: 'transparent' }}>
             <span style={{ fontSize: 20, lineHeight: 1 }}>{n.icon}</span>
             <span className="font-mono text-[9px] uppercase tracking-wider"
-              style={{ color: active ? '#00f5ff' : '#849495', fontWeight: active ? 700 : 400 }}>
+              style={{ fontWeight: active ? 700 : 400 }}>
               {n.label}
             </span>
             {active && (
-              <span className="absolute bottom-0 rounded-t-full"
-                style={{ width: 24, height: 2, background: '#00f5ff', boxShadow: '0 0 8px #00f5ff' }} />
+              <span className="absolute bottom-0 rounded-t-full mobile-nav-indicator"
+                style={{ width: 24, height: 2 }} />
             )}
           </button>
         )
