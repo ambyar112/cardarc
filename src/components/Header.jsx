@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAccount, useDisconnect } from 'wagmi'
 import { useAppKit } from '@reown/appkit/react'
-import { safeWalletRecovery, debugWalletState, checkWalletRecoveryStatus } from '../lib/walletRecovery'
 
 const NAV = [
   { path: '/gacha',       label: 'Gacha',       icon: '⚡' },
@@ -13,14 +12,12 @@ const NAV = [
 
 function shortAddr(a) { return a ? `${a.slice(0,6)}...${a.slice(-4)}` : '' }
 
-// Generate deterministic color from address
 function addrColor(addr) {
   if (!addr) return '#00f5ff'
   const hue = parseInt(addr.slice(2, 8), 16) % 360
   return `hsl(${hue}, 80%, 60%)`
 }
 
-// Avatar: default SVG user icon, colored by wallet address
 function Avatar({ address, size = 32 }) {
   const color = addrColor(address)
   const initials = address ? address.slice(2, 4).toUpperCase() : '?'
@@ -58,7 +55,6 @@ export default function Header() {
   const profileRef = useRef(null)
   const menuRef    = useRef(null)
 
-  // Close dropdowns on outside click
   useEffect(() => {
     function handler(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileMenu(false)
@@ -68,7 +64,6 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  // Mobile bottom nav items
   const MOBILE_NAV = [
     { path: '/',           label: 'Home',    icon: '🏠' },
     { path: '/gacha',      label: 'Gacha',   icon: '⚡' },
@@ -83,14 +78,12 @@ export default function Header() {
       style={{ backdropFilter: 'blur(20px)' }}>
       <div className="flex justify-between items-center px-4 md:px-12 h-14 md:h-16">
 
-        {/* Logo */}
         <button onClick={() => navigate('/')}
           className="sora text-xl font-extrabold italic tracking-tighter logo-text"
           style={{ color: 'var(--text-primary)' }}>
           ARCCARDS
         </button>
 
-        {/* Nav */}
         <nav className="hidden md:flex items-center gap-1 nav-pill"
           style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 8, padding: '4px' }}>
           {NAV.map(n => {
@@ -118,10 +111,8 @@ export default function Header() {
           })}
         </nav>
 
-        {/* Right — avatar + wallet + menu */}
         <div className="flex items-center gap-2 relative">
 
-          {/* ── Avatar / Profile button ── */}
           <div ref={profileRef} className="relative">
             <button
               onClick={() => {
@@ -146,70 +137,50 @@ export default function Header() {
               )}
             </button>
 
-            {/* Profile dropdown */}
             {profileMenu && isConnected && (
-              <div className="absolute right-0 top-12 w-64 rounded-xl overflow-hidden z-50 dropdown-bg"
-                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+              <div className="absolute right-0 top-12 w-72 rounded-lg overflow-hidden z-50"
+                style={{
+                  background: 'rgba(15,15,20,0.98)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                }}>
 
-                {/* Header */}
-                <div className="px-4 py-4 flex items-center gap-3 dropdown-header"
-                  style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--card-bg)' }}>
-                  <Avatar address={address} size={40} />
+                <div className="px-4 py-3.5 flex items-center gap-3"
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <Avatar address={address} size={36} />
                   <div className="flex-1 min-w-0">
                     <p className="jbm text-xs font-bold truncate" style={{ color: 'var(--text-primary)' }}>Collector</p>
-                    <p className="jbm text-[10px] truncate" style={{ color: 'var(--accent-cyan)' }}>{shortAddr(address)}</p>
+                    <p className="jbm text-[10px] truncate" style={{ color: '#849495' }}>{shortAddr(address)}</p>
                   </div>
                   <button
                     onClick={() => navigator.clipboard.writeText(address || '')}
-                    className="jbm text-[8px] px-2 py-1 rounded flex-shrink-0"
-                    style={{ background: 'var(--card-bg)', color: 'var(--text-muted)', border: '1px solid var(--border-color)' }}>
+                    className="jbm text-[9px] px-2 py-1 rounded flex-shrink-0"
+                    style={{ background: 'rgba(255,255,255,0.04)', color: '#849495', border: '1px solid rgba(255,255,255,0.06)' }}>
                     COPY
                   </button>
                 </div>
 
-                {/* Profile & Settings */}
-                <div className="py-1 dropdown-divider" style={{ borderBottom: '1px solid var(--border-color)' }}>
+                <div className="py-1">
                   {[
                     { icon: '🎴', label: 'View Profile', path: '/profile' },
                     { icon: '⚙️', label: 'Settings',     path: '/settings' },
+                    { icon: '🔑', label: 'Wallet Settings', action: () => open() },
+                    { icon: '🚪', label: 'Disconnect', action: () => disconnect(), danger: true },
                   ].map(a => (
                     <button key={a.label}
-                      onClick={() => { navigate(a.path); setProfileMenu(false) }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider transition-colors dropdown-item"
-                      style={{ color: 'var(--text-muted)' }}>
-                      <span>{a.icon}</span> {a.label}
+                      onClick={() => { a.action ? a.action() : navigate(a.path); setProfileMenu(false) }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider transition-colors"
+                      style={{ color: a.danger ? '#ff6b6b' : '#b4c4c4' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = a.danger ? 'rgba(255,107,107,0.08)' : 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = a.danger ? '#ff6b6b' : '#e9feff' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = a.danger ? '#ff6b6b' : '#b4c4c4' }}>
+                      <span style={{ fontSize: 14 }}>{a.icon}</span> {a.label}
                     </button>
                   ))}
-                </div>
-
-                {/* Wallet */}
-                <div className="py-1">
-                  <button
-                    onClick={() => { open(); setProfileMenu(false) }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider transition-colors dropdown-item"
-                    style={{ color: 'var(--text-muted)' }}>
-                    🔑 Wallet Settings
-                  </button>
-                  <button
-                    onClick={() => { debugWalletState(); setProfileMenu(false) }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider transition-colors dropdown-item"
-                    style={{ color: 'var(--text-muted)' }}>
-                    🔍 Debug Wallet
-                  </button>
-                  <button
-                    onClick={() => { disconnect(); setProfileMenu(false) }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider transition-colors"
-                    style={{ color: '#ff6b6b' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,107,107,0.08)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
-                    🚪 Disconnect
-                  </button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* ── Wallet connect button (shown only when not connected) ── */}
           {!isConnected && (
             <button onClick={() => open()}
               className="jbm text-[11px] uppercase tracking-wider px-4 py-2 transition-all flex items-center gap-2 connect-wallet"
@@ -221,7 +192,6 @@ export default function Header() {
             </button>
           )}
 
-          {/* ── Menu dots ── */}
           <div ref={menuRef} className="relative">
             <button onClick={() => { setMenu(v => !v); setProfileMenu(false) }}
               aria-label="Open navigation menu"
@@ -233,19 +203,17 @@ export default function Header() {
               ⋮
             </button>
 
-            {/* Dots dropdown — nav links + settings only, no View Profile */}
             {menu && (
               <div className="absolute right-0 top-11 w-56 rounded-xl overflow-hidden z-50"
                 style={{ background: 'rgba(15,15,20,0.97)', border: '1px solid rgba(0,245,255,0.15)', boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}>
 
-                {/* Nav links */}
                 <div className="py-1" style={{ borderBottom: '1px solid rgba(0,245,255,0.08)' }}>
                   {NAV.map(n => (
                     <button key={n.path} onClick={() => { n.external ? window.open(n.external, '_blank') : navigate(n.path); setMenu(false) }}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider"
-                      style={{ color: '#849495' }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#e5e1e7'; e.currentTarget.style.background = 'rgba(0,245,255,0.05)' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = '#849495'; e.currentTarget.style.background = 'transparent' }}>
+                      style={{ color: '#b4c4c4' }}
+                      onMouseEnter={e => { e.currentTarget.style.color = '#e9feff'; e.currentTarget.style.background = 'rgba(0,245,255,0.08)' }}
+                      onMouseLeave={e => { e.currentTarget.style.color = '#b4c4c4'; e.currentTarget.style.background = 'transparent' }}>
                       <span>{n.icon}</span> {n.label}
                       {n.badge && (
                         <span className="ml-auto jbm text-[8px] px-1.5 py-0.5 rounded"
@@ -255,13 +223,12 @@ export default function Header() {
                   ))}
                 </div>
 
-                {/* Settings only */}
                 <div className="py-1">
                   <button onClick={() => { navigate('/settings'); setMenu(false) }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-left jbm text-[11px] uppercase tracking-wider"
-                    style={{ color: '#849495' }}
-                    onMouseEnter={e => { e.currentTarget.style.color = '#e5e1e7'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = '#849495'; e.currentTarget.style.background = 'transparent' }}>
+                    style={{ color: '#b4c4c4' }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#e9feff'; e.currentTarget.style.background = 'rgba(0,245,255,0.08)' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = '#b4c4c4'; e.currentTarget.style.background = 'transparent' }}>
                     ⚙️ Settings
                   </button>
                 </div>
@@ -272,8 +239,6 @@ export default function Header() {
       </div>
     </header>
 
-    {/* ── Mobile Bottom Navigation Bar ── */}
-    {/* Visible only on mobile (md:hidden), sticky at bottom */}
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around mobile-nav"
       style={{
         backdropFilter: 'blur(20px)',

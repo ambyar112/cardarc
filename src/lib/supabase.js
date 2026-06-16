@@ -273,28 +273,57 @@ export async function getExplorerFeed(limit = 20) {
 // ─── Marketplace Supabase sync ────────────────────────────────
 // Source of truth = on-chain. Supabase = fast metadata cache only.
 
+// Price bounds: enforce reasonable limits client-side as defense in depth.
+// Server contract is the real gate, but we reject obviously bad values here.
+const PRICE_MIN = 0.001    // minimum listing price in USDC
+const PRICE_MAX = 1000000  // maximum listing price (1M USDC)
+
+function validatePrice(price) {
+  const p = Number(price)
+  if (!Number.isFinite(p)) throw new Error('Invalid price: not a number')
+  if (p < PRICE_MIN) throw new Error(`Price too low: minimum ${PRICE_MIN} USDC`)
+  if (p > PRICE_MAX) throw new Error(`Price too high: maximum ${PRICE_MAX} USDC`)
+  // Round to 2 decimals to match DB numeric(20, 2)
+  return Math.round(p * 100) / 100
+}
+
+function validateOnChainId(id) {
+  if (id == null) return null
+  const n = Number(id)
+  if (!Number.isInteger(n) || n < 0) throw new Error('Invalid on-chain listing ID')
+  return n
+}
+
 export async function saveListingToSupabase(listing) {
-  const { error } = await supabase.from('marketplace').insert({
-    // Use auto-generated UUID as PK; store on-chain ID separately
-    on_chain_listing_id: listing.listingId ? Number(listing.listingId) : null,
-    seller:     normalizeWallet(listing.seller),
-    card_id:    sanitizeText(listing.cardId, 100),
-    card_name:  sanitizeText(listing.cardName || listing.cardId, 200),
-    card_img:   validateImgUrl(listing.cardImg),
-    tier:       validateTier(listing.tier),
-    set_id:     sanitizeText(listing.setId, 50) || null,
-    price_usdc: Math.max(0, Number(listing.priceEth) || 0),
-    status:     'active',
-    buyer:      null,
-  })
-  if (error) console.error('saveListingToSupabase:', error.message)
+  try {
+    const safePrice = validatePrice(listing.priceEth)
+    const safeOnChainId = validateOnChainId(listing.listingId)
+    const { error } = await supabase.from('marketplace').insert({
+      on_chain_listing_id: safeOnChainId,
+      seller:     normalizeWallet(listing.seller),
+      card_id:    sanitizeText(listing.cardId, 100),
+      card_name:  sanitizeText(listing.cardName || listing.cardId, 200),
+      card_img:   validateImgUrl(listing.cardImg),
+      tier:       validateTier(listing.tier),
+      set_id:     sanitizeText(listing.setId, 50) || null,
+      price_usdc: safePrice,
+      price_wei:  BigInt(Math.floor(safePrice * 1e18)).toString(),
+      status:     'active',
+      buyer:      null,
+    })
+    if (error) console.error('saveListingToSupabase:', error.message)
+    return !error
+  } catch (e) {
+    console.error('saveListingToSupabase validation:', e.message)
+    return false
+  }
 }
 
 export async function markListingSold(onChainListingId, buyerWallet) {
   await supabase
     .from('marketplace')
     .update({ status: 'sold', buyer: normalizeWallet(buyerWallet) })
-    .eq('on_chain_listing_id', Number(onChainListingId))
+    .eq('on_chain_listing_id', validateOnChainId(onChainListingId))
     .eq('status', 'active') // only update active listings
 }
 
@@ -302,7 +331,7 @@ export async function markListingCancelled(onChainListingId) {
   await supabase
     .from('marketplace')
     .update({ status: 'cancelled' })
-    .eq('on_chain_listing_id', Number(onChainListingId))
+    .eq('on_chain_listing_id', validateOnChainId(onChainListingId))
     .eq('status', 'active') // only update active listings
 }
 

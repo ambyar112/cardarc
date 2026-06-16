@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { useNavigate } from 'react-router-dom'
-import { getCollection, getGachaLog, upsertProfile, getLeaderboard } from '../lib/supabase'
+import { getCollection, getGachaLog, upsertProfile, getRealLeaderboard } from '../lib/supabase'
 import CardItem from '../components/CardItem'
 import ListModal from '../components/ListModal'
 
@@ -45,7 +45,7 @@ export default function Profile() {
       const [collection, pullLog, board] = await Promise.all([
         getCollection(address),
         getGachaLog(address, 10),
-        getLeaderboard(),
+        getRealLeaderboard(),
       ])
       const profile = board.find(p => p.wallet?.toLowerCase() === address.toLowerCase())
       setUsername(profile?.username || '')
@@ -64,7 +64,7 @@ export default function Profile() {
         pokemon:   collection.filter(c => !['yugioh','dragonball'].includes(c.set_id)).length,
         yugioh:    collection.filter(c => c.set_id === 'yugioh').length,
         dbs:       collection.filter(c => c.set_id === 'dragonball').length,
-        level:     profile?.level || 1,
+        totalPulls: profile?.totalPulls || 0,
         rank:      board.findIndex(p => p.wallet?.toLowerCase() === address.toLowerCase()) + 1 || '—',
       })
       setLog(pullLog)
@@ -148,7 +148,7 @@ export default function Profile() {
             {stats?.rank > 0 && (
               <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary">📈 Rank #{stats.rank}</span>
             )}
-            <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-tertiary/30 bg-tertiary/10 text-tertiary">{stats?.total || 0} Cards</span>
+            <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-tertiary/30 bg-tertiary/10 text-tertiary">📦 {stats?.totalPulls || 0} Total Cards</span>
           </div>
         </div>
         {/* Quick stats */}
