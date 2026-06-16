@@ -137,10 +137,10 @@ export default function Leaderboard() {
                 <tr className="jbm uppercase"
                   style={{ fontSize: 10, color: '#b9caca', letterSpacing: '0.1em',
                            borderBottom: '1px solid rgba(0,245,255,0.08)', background: 'rgba(5,5,8,0.4)' }}>
-                  <th className="px-3 sm:px-6 py-3">Rank</th>
-                  <th className="px-3 sm:px-6 py-3">Player</th>
-                  <th className="px-3 sm:px-6 py-3 text-right hidden sm:table-cell">Total Pulls</th>
-                  <th className="px-3 sm:px-6 py-3 text-right">Legendary ✦</th>
+                  <th className="px-2 sm:px-3 py-3 whitespace-nowrap">Rank</th>
+                  <th className="px-2 sm:px-3 py-3">Player</th>
+                  <th className="px-2 sm:px-3 py-3 text-right hidden sm:table-cell whitespace-nowrap">Total Pulls</th>
+                  <th className="px-2 sm:px-3 py-3 text-right whitespace-nowrap">Legendary ✦</th>
                 </tr>
               </thead>
               <tbody>
@@ -157,12 +157,12 @@ export default function Leaderboard() {
                       }}
                       onMouseEnter={e => { if (!isYou) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
                       onMouseLeave={e => { if (!isYou) e.currentTarget.style.background = 'transparent' }}>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <td className="px-2 sm:px-3 py-3">
                         <span className="jbm font-bold" style={{ fontSize: 14, color: rankColor }}>
                           {i === 0 ? '👑' : String(i + 1).padStart(2, '0')}
                         </span>
                       </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <td className="px-2 sm:px-3 py-3">
                         <div className="flex items-center gap-2 sm:gap-3">
                           <div className="jbm flex items-center justify-center rounded flex-shrink-0"
                             style={{
@@ -184,12 +184,12 @@ export default function Leaderboard() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-right hidden sm:table-cell">
+                      <td className="px-2 sm:px-3 py-3 text-right hidden sm:table-cell">
                         <span className="jbm" style={{ fontSize: 12, color: '#9aa3b2' }}>
                           {r.totalPulls.toLocaleString()}
                         </span>
                       </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-right">
+                      <td className="px-2 sm:px-3 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <span style={{ fontSize: 12 }}>✦</span>
                           <span className="jbm font-bold" style={{ fontSize: 12, color: '#ffdb40' }}>
