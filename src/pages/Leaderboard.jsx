@@ -109,7 +109,7 @@ export default function Leaderboard() {
           <div className="jbm ml-auto px-2 py-0.5 rounded"
             style={{ fontSize: 9, background: 'rgba(255,219,64,0.15)', color: '#ffdb40',
                      border: '1px solid rgba(255,219,64,0.4)', letterSpacing: '0.08em', fontWeight: 700 }}>
-            SEASON 4 · LIVE
+            🏆 SEASON 1 · LIVE
           </div>
         </div>
 
@@ -132,7 +132,7 @@ export default function Leaderboard() {
                            borderBottom: '1px solid rgba(0,245,255,0.08)', background: 'rgba(5,5,8,0.4)' }}>
                   <th className="pl-3 pr-1 sm:px-3 py-2.5 whitespace-nowrap" style={{ width: 44 }}>#</th>
                   <th className="px-1 sm:px-3 py-2.5">Player</th>
-                  <th className="px-1 sm:px-3 py-2.5 text-right hidden sm:table-cell whitespace-nowrap" style={{ width: 90 }}>Pulls</th>
+                  <th className="px-1 sm:px-3 py-2.5 text-right whitespace-nowrap" style={{ width: 70 }}>Cards</th>
                   <th className="pl-1 pr-3 sm:px-3 py-2.5 text-right whitespace-nowrap" style={{ width: 64 }}>✦</th>
                 </tr>
               </thead>
@@ -176,7 +176,7 @@ export default function Leaderboard() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-1 sm:px-3 py-2.5 text-right hidden sm:table-cell">
+                      <td className="px-1 sm:px-3 py-2.5 text-right">
                         <span className="jbm" style={{ fontSize: 11, color: '#9aa3b2' }}>
                           {r.totalPulls.toLocaleString()}
                         </span>
