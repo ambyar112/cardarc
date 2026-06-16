@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { getGlobalStats } from '../lib/supabase'
+import LazyImage from '../components/LazyImage'
 
 function formatNum(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
@@ -105,17 +106,24 @@ function PackCard({ pack, onClick }) {
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-500"
         style={{ background: `linear-gradient(135deg, transparent 0%, rgba(${pack.accentRgb},0.05) 50%, transparent 100%)` }} />
 
-      {/* Card image */}
+      {/* Card image — optimized with LazyImage component */}
       <div className="relative h-56 overflow-hidden bg-[#05050a]">
-        <img key={idx} src={card.img} alt={card.name} referrerPolicy="no-referrer"
-          width="180" height="240"
-          className="w-full h-full object-contain p-3"
-          style={{
-            opacity: fading ? 0 : 1,
-            transition: 'opacity 0.3s ease',
-            filter: `drop-shadow(0 0 16px ${pack.accent}50)`,
-          }}
-          onError={e => { e.currentTarget.style.opacity = '0' }} />
+        <div key={idx} style={{
+          opacity: fading ? 0 : 1,
+          transition: 'opacity 0.3s ease',
+          filter: `drop-shadow(0 0 16px ${pack.accent}50)`,
+        }}>
+          <LazyImage
+            src={card.img}
+            alt={card.name}
+            width={421}
+            height={614}
+            priority={pack.game === 'yugioh' && idx === 0}
+            sizes="(max-width: 640px) 180px, (max-width: 1024px) 200px, 240px"
+            className="w-full h-full"
+            style={{ filter: 'none' }}
+          />
+        </div>
         <div className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
           style={{ background: `linear-gradient(to top, rgba(5,5,8,0.95), transparent)` }} />
         {/* Game badge — contrast ratio fixed: white text on dark bg */}

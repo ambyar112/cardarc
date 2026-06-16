@@ -8,15 +8,10 @@ import { fetchOnChainListings, purchaseListing, cancelListing,
 import ListModal from '../components/ListModal'
 import BulkListModal from '../components/BulkListModal'
 import CardItem from '../components/CardItem'
+import PackCard from '../components/PackCard'
 
 const TIER_COLORS = { legendary:'#f5c84c', epic:'#a78bfa', rare:'#16e6ff', common:'#9aa3b2' }
 const TIER_BG     = { legendary:'rgba(245,200,76,.08)', epic:'rgba(167,139,250,.08)', rare:'rgba(22,230,255,.06)', common:'rgba(255,255,255,.03)' }
-const GAME_FILTERS = [
-  { id:'all', label:'All', icon:'✦' },
-  { id:'pokemon', label:'PKM', icon:'⚡' },
-  { id:'yugioh', label:'YGO', icon:'⚔️' },
-  { id:'dragonball', label:'DBS', icon:'🔥' },
-]
 const TIER_FILTERS = ['all','legendary','epic','rare','common']
 
 function shortAddr(a) { return a ? `${a.slice(0,6)}...${a.slice(-4)}` : '—' }
@@ -306,13 +301,13 @@ function ListingCard({ listing, address, onBuy, onCancel, onEdit, cancelingId })
 // ── Main ─────────────────────────────────────────────────────────
 export default function Marketplace() {
   const { address, isConnected } = useAccount()
-  const [tab, setTab]               = useState('listings')
+  const [tab, setTab]               = useState('packs')
   const [listings, setListings]     = useState([])
   const [loadingL, setLoadingL]     = useState(true)
   const [trades, setTrades]         = useState([])
   const [tradeLoading, setTradeLoading] = useState(false)
   const [tradeSearch, setTradeSearch]   = useState('')
-  const [gameFilter, setGameFilter] = useState('all')
+  const [selectedPack, setSelectedPack] = useState(null)
   const [buyTarget, setBuyTarget]   = useState(null)
   const [editTarget, setEditTarget] = useState(null)
   const [cancelingId, setCancelingId] = useState(null)
@@ -407,9 +402,9 @@ export default function Marketplace() {
   function toggleCard(card) { setBulkSelected(prev => { const n=new Set(prev); n.has(card.id)?n.delete(card.id):n.add(card.id); return n }) }
 
   const filteredListings = listings.filter(l => {
-    if (gameFilter==='all') return true
+    if (!selectedPack) return true
     const g=gameLabel(l.cardId)
-    return gameFilter==='pokemon'?g==='⚡ PKM':gameFilter==='yugioh'?g==='⚔️ YGO':gameFilter==='dragonball'?g==='🔥 DBS':true
+    return selectedPack==='pokemon'?g==='⚡ PKM':selectedPack==='yugioh'?g==='⚔️ YGO':selectedPack==='dragonball'?g==='🔥 DBS':true
   })
   const myListings = listings.filter(l => address && l.seller.toLowerCase() === address.toLowerCase())
   const filteredSellCards = myCards.filter(c => {
@@ -419,9 +414,23 @@ export default function Marketplace() {
     return t&&s&&g
   })
   const bulkCards = myCards.filter(c => bulkSelected.has(c.id))
-  const filteredTrades = trades.filter(t =>
-    !tradeSearch||t.card_name?.toLowerCase().includes(tradeSearch.toLowerCase())||t.seller?.includes(tradeSearch)||t.buyer?.includes(tradeSearch)
-  )
+  const filteredTrades = trades.filter(t => {
+    const searchMatch = !tradeSearch||t.card_name?.toLowerCase().includes(tradeSearch.toLowerCase())||t.seller?.includes(tradeSearch)||t.buyer?.includes(tradeSearch)
+    if (!selectedPack) return searchMatch
+    const g=gameLabel(t.card_id)
+    const packMatch = selectedPack==='pokemon'?g==='⚡ PKM':selectedPack==='yugioh'?g==='⚔️ YGO':selectedPack==='dragonball'?g==='🔥 DBS':true
+    return searchMatch && packMatch
+  })
+
+  // Pack counts
+  const pokemonCount = listings.filter(l => gameLabel(l.cardId) === '⚡ PKM').length
+  const yugiohCount = listings.filter(l => gameLabel(l.cardId) === '⚔️ YGO').length
+  const dragonballCount = listings.filter(l => gameLabel(l.cardId) === '🔥 DBS').length
+
+  function handlePackSelect(pack) {
+    setSelectedPack(pack)
+    setTab('listings')
+  }
 
   return (
     <div className="pt-24 px-4 lg:px-12 pb-12 max-w-[1400px] mx-auto flex flex-col gap-6">
@@ -429,9 +438,19 @@ export default function Marketplace() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-2 flex-wrap">
+          {tab !== 'packs' && (
+            <button
+              onClick={() => { setTab('packs'); setSelectedPack(null) }}
+              className="glass p-2 rounded-xl border border-white/10 hover:border-primary/40 transition-colors"
+              title="Back to Packs"
+            >
+              <span className="material-symbols-outlined text-base text-on-surface-variant">arrow_back</span>
+            </button>
+          )}
           <div className="glass p-1 rounded-xl flex items-center gap-1">
             {[
-              { id:'listings', label:'Active Listings', count:listings.length },
+              { id:'packs',    label:'Packs',          count:null },
+              { id:'listings', label:'Active Listings', count:filteredListings.length },
               { id:'my',       label:'My Listings',     count:myListings.length },
               { id:'history',  label:'Trade History',   count:null },
             ].map(t => (
@@ -456,6 +475,13 @@ export default function Marketplace() {
           </button>
         </div>
         <div className="flex items-center gap-2">
+          {selectedPack && (
+            <div className="glass px-3 py-2 rounded-full border border-primary/20 text-xs flex items-center gap-2">
+              <span className="font-mono text-primary">
+                {selectedPack === 'pokemon' ? '⚡ Pokemon' : selectedPack === 'yugioh' ? '⚔️ Yugioh' : '🔥 Dragon Ball'}
+              </span>
+            </div>
+          )}
           <div className="flex items-center gap-2 glass px-4 py-2 rounded-full border border-green-500/20 text-xs">
             <span className="w-2 h-2 rounded-full bg-green-400" />
             <span className="font-mono text-green-400">On-chain • Arc Test</span>
@@ -467,17 +493,23 @@ export default function Marketplace() {
         </div>
       </div>
 
+      {/* ── PACK SELECTION ── */}
+      {tab === 'packs' && (
+        <div className="flex flex-col gap-6">
+          <div className="text-center max-w-2xl mx-auto">
+            <h2 className="font-display text-3xl font-bold text-on-surface mb-2">Choose Your Pack</h2>
+            <p className="font-body text-sm text-on-surface-variant">Browse cards by game collection</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto w-full">
+            <PackCard game="pokemon" count={pokemonCount} onClick={() => handlePackSelect('pokemon')} loading={loadingL} />
+            <PackCard game="yugioh" count={yugiohCount} onClick={() => handlePackSelect('yugioh')} loading={loadingL} />
+            <PackCard game="dragonball" count={dragonballCount} onClick={() => handlePackSelect('dragonball')} loading={loadingL} />
+          </div>
+        </div>
+      )}
+
       {/* ── ACTIVE LISTINGS ── */}
       {tab === 'listings' && (<>
-        <div className="flex items-center gap-2 flex-wrap">
-          {GAME_FILTERS.map(f => (
-            <button key={f.id} onClick={() => setGameFilter(f.id)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full font-mono text-[11px] font-bold uppercase transition-all"
-              style={{ background:gameFilter===f.id?'rgba(255,255,255,.15)':'rgba(255,255,255,.05)', border:gameFilter===f.id?'1px solid rgba(255,255,255,.35)':'1px solid rgba(255,255,255,.1)', color:gameFilter===f.id?'#eef2ff':'#9aa3b2', transform:gameFilter===f.id?'scale(1.05)':'scale(1)' }}>
-              {f.icon} {f.label}
-            </button>
-          ))}
-        </div>
         {loadingL ? (
           <div className="flex items-center justify-center gap-2 py-8">
             <span className="font-mono text-xs text-on-surface-variant">Loading...</span>

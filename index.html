@@ -13,17 +13,20 @@
     <!-- Preconnect ke origins paling kritis -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://images.ygoprodeck.com" />
+    <link rel="preconnect" href="https://images.ygoprodeck.com" crossorigin />
     <link rel="dns-prefetch" href="https://assets.tcgdex.net" />
     <link rel="dns-prefetch" href="https://www.dbs-cardgame.com" />
 
-    <!-- Fonts — NON-RENDER-BLOCKING dengan font-display swap untuk CLS -->
+    <!-- Preload LCP image — Hero card image (only on homepage) -->
+    <link rel="preload" as="image" href="https://images.ygoprodeck.com/images/cards/89631139.jpg" fetchpriority="high" media="(min-width: 1024px)" />
+
+    <!-- Fonts — NON-RENDER-BLOCKING dengan font-display swap untuk CLS. Orbitron dihapus (heavy, jarang dipakai). -->
     <link rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Share+Tech+Mono&family=Plus+Jakarta+Sans:wght@400;500&family=Orbitron:wght@700;800&display=swap&text-rendering=optimizeSpeed"
+      href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Share+Tech+Mono&family=Plus+Jakarta+Sans:wght@400;500&display=swap"
       media="print" onload="this.media='all'" />
     <noscript>
       <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Share+Tech+Mono&family=Plus+Jakarta+Sans:wght@400;500&family=Orbitron:wght@700;800&display=swap" />
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Share+Tech+Mono&family=Plus+Jakarta+Sans:wght@400;500&display=swap" />
     </noscript>
 
     <!-- Material Icons — fully deferred -->

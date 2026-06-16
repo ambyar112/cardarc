@@ -1,14 +1,29 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
 import AppLayout from './components/AppLayout'
-import Home from './pages/Home'
-import Gacha from './pages/Gacha'
-import Collection from './pages/Collection'
-import Marketplace from './pages/Marketplace'
-import Leaderboard from './pages/Leaderboard'
-import Faucet from './pages/Faucet'
-import Profile from './pages/Profile'
-import Settings from './pages/Settings'
+
+// Lazy load pages for code splitting — reduces initial bundle size
+const Home        = lazy(() => import('./pages/Home'))
+const Gacha       = lazy(() => import('./pages/Gacha'))
+const Collection  = lazy(() => import('./pages/Collection'))
+const Marketplace = lazy(() => import('./pages/Marketplace'))
+const Leaderboard = lazy(() => import('./pages/Leaderboard'))
+const Faucet      = lazy(() => import('./pages/Faucet'))
+const Profile     = lazy(() => import('./pages/Profile'))
+const Settings    = lazy(() => import('./pages/Settings'))
+
+// Loading fallback — prevents layout shift
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="text-center">
+        <div className="inline-block w-12 h-12 border-4 border-[#00f5ff]/20 border-t-[#00f5ff] rounded-full animate-spin" />
+        <p className="mt-4 font-mono text-sm text-cyan-400/60">Loading...</p>
+      </div>
+    </div>
+  )
+}
 
 export default function App() {
   return (
@@ -24,17 +39,19 @@ export default function App() {
 
       {/* pb-16 md:pb-0 = space for mobile bottom nav bar */}
       <main id="main-content" className="relative z-10 pb-16 md:pb-0">
-        <Routes>
-          <Route path="/"            element={<Home />} />
-          <Route path="/home"        element={<Home />} />
-          <Route path="/gacha"       element={<Gacha />} />
-          <Route path="/collection"  element={<Collection />} />
-          <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/faucet"      element={<Faucet />} />
-          <Route path="/profile"     element={<Profile />} />
-          <Route path="/settings"    element={<Settings />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/"            element={<Home />} />
+            <Route path="/home"        element={<Home />} />
+            <Route path="/gacha"       element={<Gacha />} />
+            <Route path="/collection"  element={<Collection />} />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/faucet"      element={<Faucet />} />
+            <Route path="/profile"     element={<Profile />} />
+            <Route path="/settings"    element={<Settings />} />
+          </Routes>
+        </Suspense>
       </main>
 
       <footer
