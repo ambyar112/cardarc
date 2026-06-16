@@ -57,24 +57,6 @@ export default function Header() {
   const [profileMenu, setProfileMenu] = useState(false)
   const profileRef = useRef(null)
   const menuRef    = useRef(null)
-  
-  // Auto-reconnect timer for post-restart scenarios
-  const [showReconnectButton, setShowReconnectButton] = useState(false)
-  const [reconnectAttempts, setReconnectAttempts] = useState(0)
-
-  useEffect(() => {
-    if (!isConnected) {
-      // Show reconnect button after 2 seconds if wallet not connected
-      const timer = setTimeout(() => {
-        setShowReconnectButton(true)
-      }, 2000)
-      
-      return () => clearTimeout(timer)
-    } else {
-      setShowReconnectButton(false)
-      setReconnectAttempts(0)
-    }
-  }, [isConnected])
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -229,32 +211,14 @@ export default function Header() {
 
           {/* ── Wallet connect button (shown only when not connected) ── */}
           {!isConnected && (
-            <div className="flex items-center gap-1">
-              <button onClick={() => open()}
-                className="jbm text-[11px] uppercase tracking-wider px-4 py-2 transition-all flex items-center gap-2 connect-wallet"
-                style={{
-                  borderRadius: 6,
-                }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent-cyan)' }} />
-                Connect Wallet
-              </button>
-              {showReconnectButton && (
-                <button
-                  onClick={() => safeWalletRecovery()}
-                  className="jbm text-[10px] uppercase tracking-wider px-3 py-2 transition-all"
-                  style={{
-                    background: 'rgba(0,245,255,0.08)',
-                    color: '#00f5ff',
-                    border: '1px solid rgba(0,245,255,0.3)',
-                    borderRadius: 6,
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,245,255,0.6)'; e.currentTarget.style.background = 'rgba(0,245,255,0.12)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(0,245,255,0.3)'; e.currentTarget.style.background = 'rgba(0,245,255,0.08)' }}
-                  title="Reconnect wallet after restart">
-                  🔄 Reconnect
-                </button>
-              )}
-            </div>
+            <button onClick={() => open()}
+              className="jbm text-[11px] uppercase tracking-wider px-4 py-2 transition-all flex items-center gap-2 connect-wallet"
+              style={{
+                borderRadius: 6,
+              }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent-cyan)' }} />
+              Connect Wallet
+            </button>
           )}
 
           {/* ── Menu dots ── */}
