@@ -20,7 +20,7 @@ export default function Profile() {
   const { address, isConnected } = useAccount()
   const navigate = useNavigate()
 
-  const [tab, setTab]           = useState('overview') // 'overview' | 'collection'
+  const [tab, setTab]           = useState('collection') // 'collection' | 'overview'
   const [stats, setStats]       = useState(null)
   const [cards, setCards]       = useState([])
   const [log, setLog]           = useState([])
@@ -144,10 +144,10 @@ export default function Profile() {
             <span className="font-mono text-xs text-tertiary">{shortAddr(address)}</span>
             <button onClick={() => navigator.clipboard.writeText(address || '')}
               className="font-mono text-[9px] text-on-surface-variant hover:text-on-surface bg-white/5 px-2 py-0.5 rounded border border-white/10">COPY</button>
+            <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-secondary/30 bg-secondary/10 text-secondary">🏆 Season 1</span>
             {stats?.rank > 0 && (
-              <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-secondary/30 bg-secondary/10 text-secondary">Rank #{stats.rank}</span>
+              <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary">📈 Rank #{stats.rank}</span>
             )}
-            <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary">Level {stats?.level || 1}</span>
             <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-tertiary/30 bg-tertiary/10 text-tertiary">{stats?.total || 0} Cards</span>
           </div>
         </div>
