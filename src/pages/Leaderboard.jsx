@@ -141,7 +141,6 @@ export default function Leaderboard() {
                   <th className="px-3 sm:px-6 py-3">Player</th>
                   <th className="px-3 sm:px-6 py-3 text-right hidden sm:table-cell">Total Pulls</th>
                   <th className="px-3 sm:px-6 py-3 text-right">Legendary ✦</th>
-                  <th className="px-3 sm:px-6 py-3 text-right hidden md:table-cell">ARC Volume</th>
                 </tr>
               </thead>
               <tbody>
@@ -197,12 +196,6 @@ export default function Leaderboard() {
                             {r.legendary_count}
                           </span>
                         </div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-right hidden md:table-cell">
-                        <span className="jbm" style={{ fontSize: 12, color: '#00f5ff' }}>
-                          {formatVol(r.arc_volume)}
-                          <span style={{ color: '#3a494a', marginLeft: 4 }}>USDC</span>
-                        </span>
                       </td>
                     </tr>
                   )
