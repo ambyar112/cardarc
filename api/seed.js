@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // Service role key from Vercel env
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://xswquwhtulshrvwkyjqu.supabase.co'
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhzd3F1d2h0dWxzaHJ2d2t5anF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxMDgzMTQsImV4cCI6MjA2NTY4NDMxNH0.YkXeSMeF5pKSkv7Q-tau8q2V6t8-l1dAr5DCLwjvCwg'
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhzd3F1d2h0dWxzaHJ2d2t5anF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDYyNTEsImV4cCI6MjA5NjMyMjI1MX0.RTB0QJDJnb-17RKgnAPVZXALPvxWvZcRIMW1_evtO98'
 
 const sellers = [
   '0x1234567890123456789012345678901234567890',
