@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = 'https://xswquwhtulshrvwkyjqu.supabase.co'
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhzd3F1d2h0dWxzaHJ2d2t5anF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDYyNTEsImV4cCI6MjA5NjMyMjI1MX0.RTB0QJDJnb-17RKgnAPVZXALPvxWvZcRIMW1_evtO98'
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://xswquwhtulshrvwkyjqu.supabase.co'
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhzd3F1d2h0dWxzaHJ2d2t5anF1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDc0NjI1MSwiZXhwIjoyMDk2MzIyMjUxfQ.PLACEHOLDER_SERVICE_ROLE_KEY'
 
 const sellers = [
   '0x1234567890123456789012345678901234567890',
@@ -39,25 +39,21 @@ export default async function handler(req, res) {
       legendary_count: 5
     }))
 
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert(profiles, { onConflict: 'wallet' })
+    // Use SECURITY DEFINER RPC functions to bypass RLS
+    const { data: profileResult, error: profileError } = await supabase
+      .rpc('seed_profiles', { profiles_data: profiles })
 
     if (profileError) throw new Error(`Profile error: ${profileError.message}`)
 
-    await supabase.from('marketplace').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-
-    const { data, error: insertError } = await supabase
-      .from('marketplace')
-      .insert(sampleListings)
-      .select()
+    const { data: marketResult, error: insertError } = await supabase
+      .rpc('seed_marketplace', { listings_data: sampleListings })
 
     if (insertError) throw new Error(`Insert error: ${insertError.message}`)
 
     return res.status(200).json({
       success: true,
-      profiles_created: profiles.length,
-      listings_created: data?.length || 0,
+      profiles_created: profileResult?.[0]?.profiles_created || profiles.length,
+      listings_created: marketResult?.[0]?.listings_created || sampleListings.length,
       message: 'Marketplace seeded successfully!'
     })
   } catch (error) {
