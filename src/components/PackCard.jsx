@@ -38,6 +38,46 @@ const PACK_THEMES = {
 }
 
 function PackArt({ game, accent, packGradient, packLabel }) {
+  const getArtDesign = () => {
+    if (game === 'pokemon') {
+      return (
+        <>
+          {/* Pokeball design */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/30 shadow-inner" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-gray-800/40 border border-white/20" />
+          <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-800/30" />
+        </>
+      )
+    }
+    if (game === 'yugioh') {
+      return (
+        <>
+          {/* Eye of Anubis / Triangle */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0 h-0 border-l-[10px] border-r-[10px] border-b-[16px] border-l-transparent border-r-transparent border-b-white/30" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-3 w-2 h-2 rounded-full bg-white/40" />
+        </>
+      )
+    }
+    if (game === 'dragonball') {
+      return (
+        <>
+          {/* Dragon Ball with stars */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/20" />
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="absolute w-1.5 h-1.5 bg-white/50 rounded-full"
+              style={{
+                top: `${50 + 30 * Math.sin((i * 2 * Math.PI) / 4)}%`,
+                left: `${50 + 30 * Math.cos((i * 2 * Math.PI) / 4)}%`,
+                transform: 'translate(-50%, -50%)',
+              }}
+            />
+          ))}
+        </>
+      )
+    }
+    return null
+  }
+
   return (
     <div className="relative w-16 h-20 rounded-lg overflow-hidden shadow-2xl transition-transform duration-500 group-hover:rotate-3 group-hover:scale-110"
       style={{
@@ -45,6 +85,8 @@ function PackArt({ game, accent, packGradient, packLabel }) {
         boxShadow: `0 8px 24px ${accent}40, inset 0 1px 0 rgba(255,255,255,0.3)`,
       }}
     >
+      {/* Game-specific art design */}
+      {getArtDesign()}
       {/* Foil shine effect */}
       <div className="absolute inset-0 opacity-60"
         style={{
