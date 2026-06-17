@@ -1,8 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Service role key from Vercel env
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://xswquwhtulshrvwkyjqu.supabase.co'
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhzd3F1d2h0dWxzaHJ2d2t5anF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDYyNTEsImV4cCI6MjA5NjMyMjI1MX0.RTB0QJDJnb-17RKgnAPVZXALPvxWvZcRIMW1_evtO98'
+const supabaseUrl = 'https://xswquwhtulshrvwkyjqu.supabase.co'
+const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhzd3F1d2h0dWxzaHJ2d2t5anF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NDYyNTEsImV4cCI6MjA5NjMyMjI1MX0.RTB0QJDJnb-17RKgnAPVZXALPvxWvZcRIMW1_evtO98'
 
 const sellers = [
   '0x1234567890123456789012345678901234567890',
@@ -21,19 +20,11 @@ const sampleListings = [
 ]
 
 export default async function handler(req, res) {
-  // Auth check
   const authHeader = req.headers.authorization
-  const expectedToken = process.env.SEED_SECRET || 'arccc-seed-2026'
+  const expectedToken = 'arccc-seed-2026'
   
   if (authHeader !== `Bearer ${expectedToken}`) {
     return res.status(401).json({ error: 'Unauthorized' })
-  }
-
-  if (!supabaseServiceKey) {
-    return res.status(500).json({ 
-      error: 'SUPABASE_SERVICE_ROLE_KEY not configured in Vercel env vars',
-      hint: 'Add SUPABASE_SERVICE_ROLE_KEY to Vercel project settings'
-    })
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -41,7 +32,6 @@ export default async function handler(req, res) {
   })
 
   try {
-    // Step 1: Create profiles
     const profiles = sellers.map(wallet => ({
       wallet: wallet.toLowerCase(),
       username: `seller_${wallet.slice(2, 8)}`,
@@ -55,10 +45,8 @@ export default async function handler(req, res) {
 
     if (profileError) throw new Error(`Profile error: ${profileError.message}`)
 
-    // Step 2: Clear existing listings (idempotent)
     await supabase.from('marketplace').delete().neq('id', '00000000-0000-0000-0000-000000000000')
 
-    // Step 3: Insert listings
     const { data, error: insertError } = await supabase
       .from('marketplace')
       .insert(sampleListings)
