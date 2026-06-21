@@ -1,8 +1,7 @@
 -- ═══════════════════════════════════════════════════════════════════════
--- TEMPORARY SEED BYPASS FOR DEMO DATA
+-- TEMPORARY SEED BYPASS FOR DEMO DATA (FIXED VERSION)
 -- ═══════════════════════════════════════════════════════════════════════
--- This creates RPC functions that bypass RLS for seeding marketplace data.
--- Run this in Supabase SQL Editor, then call via seed endpoint.
+-- Run this in Supabase SQL Editor, then call the seed API endpoint.
 
 -- Function: seed_profiles (bypasses RLS with SECURITY DEFINER)
 CREATE OR REPLACE FUNCTION seed_profiles(profiles_data jsonb)
@@ -33,7 +32,7 @@ BEGIN
 END;
 $$;
 
--- Function: seed_marketplace (bypasses RLS with SECURITY DEFINER)
+-- Function: seed_marketplace (FIXED - no price_wei column)
 CREATE OR REPLACE FUNCTION seed_marketplace(listings_data jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -42,13 +41,11 @@ AS $$
 DECLARE
   result_count int := 0;
 BEGIN
-  -- Clear existing marketplace data
   DELETE FROM marketplace WHERE id != '00000000-0000-0000-0000-000000000000'::uuid;
   
-  -- Insert new listings
   INSERT INTO marketplace (
     on_chain_listing_id, seller, card_id, card_name, card_img,
-    tier, set_id, price_wei, price_usdc, status
+    tier, set_id, price_usdc, status
   )
   SELECT 
     (item->>'on_chain_listing_id')::bigint,
@@ -58,7 +55,6 @@ BEGIN
     (item->>'card_img')::text,
     (item->>'tier')::text,
     (item->>'set_id')::text,
-    (item->>'price_wei')::numeric,
     (item->>'price_usdc')::numeric,
     COALESCE((item->>'status')::text, 'active')
   FROM jsonb_array_elements(listings_data) AS item;
@@ -69,6 +65,5 @@ BEGIN
 END;
 $$;
 
--- Grant execute to anon role (allows API calls)
 GRANT EXECUTE ON FUNCTION seed_profiles(jsonb) TO anon;
 GRANT EXECUTE ON FUNCTION seed_marketplace(jsonb) TO anon;
