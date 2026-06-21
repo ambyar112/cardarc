@@ -34,25 +34,12 @@ export default function ListModal({ card, walletAddress, onClose, onListed }) {
     const p = parseFloat(price)
 
     try {
-      // 1. Check if card has been minted on-chain
-      setStep('minting')
+      // 1. Get tokenId — card should already be minted from gacha
       let tokenId = await getTokenId(card.id)
-
       if (!tokenId) {
-        // Card not yet on-chain — mint via approved minter flow
-        const mintRes = await mintCardNFT(walletAddress, card)
-        if (!mintRes.success) {
-          setStep('error')
-          setErrorMsg('Gagal mint kartu ke blockchain: ' + mintRes.error)
-          return
-        }
-        // Re-fetch tokenId after mint
-        tokenId = await getTokenId(card.id)
-        if (!tokenId) {
-          setStep('error')
-          setErrorMsg('Mint berhasil tapi tokenId tidak ditemukan. Coba refresh dan ulangi.')
-          return
-        }
+        setStep('error')
+        setErrorMsg('Card belum ter-mint on-chain. Ini tidak seharusnya terjadi. Hubungi support.')
+        return
       }
 
       // 2. Approve marketplace if not yet approved
