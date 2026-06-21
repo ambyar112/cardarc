@@ -12,7 +12,6 @@
  */
 
 import { createPublicClient, http, PublicClient, fallback, Chain } from 'viem';
-import { mainnet, polygon, arbitrum, base } from 'viem/chains';
 
 // ────────────────────────────────────────────────────────────────────────
 // ARC TESTNET CHAIN CONFIGURATION
@@ -47,31 +46,7 @@ interface RpcEndpoint {
 }
 
 const RPC_ENDPOINTS: Record<number, RpcEndpoint[]> = {
-  // Ethereum Mainnet
-  1: [
-    { url: 'https://eth.llamarpc.com', provider: 'LlamaRPC', priority: 1, maxRetries: 3 },
-    { url: 'https://rpc.ankr.com/eth', provider: 'Ankr', priority: 2, maxRetries: 3 },
-    { url: 'https://eth.drpc.org', provider: 'dRPC', priority: 3, maxRetries: 2 },
-  ],
-  // Polygon
-  137: [
-    { url: 'https://polygon.llamarpc.com', provider: 'LlamaRPC', priority: 1, maxRetries: 3 },
-    { url: 'https://rpc.ankr.com/polygon', provider: 'Ankr', priority: 2, maxRetries: 3 },
-    { url: 'https://polygon.drpc.org', provider: 'dRPC', priority: 3, maxRetries: 2 },
-  ],
-  // Arbitrum
-  42161: [
-    { url: 'https://arbitrum.llamarpc.com', provider: 'LlamaRPC', priority: 1, maxRetries: 3 },
-    { url: 'https://rpc.ankr.com/arbitrum', provider: 'Ankr', priority: 2, maxRetries: 3 },
-    { url: 'https://arbitrum.drpc.org', provider: 'dRPC', priority: 3, maxRetries: 2 },
-  ],
-  // Base
-  8453: [
-    { url: 'https://base.llamarpc.com', provider: 'LlamaRPC', priority: 1, maxRetries: 3 },
-    { url: 'https://rpc.ankr.com/base', provider: 'Ankr', priority: 2, maxRetries: 3 },
-    { url: 'https://base.drpc.org', provider: 'dRPC', priority: 3, maxRetries: 2 },
-  ],
-  // Arc Testnet
+  // Arc Testnet - Primary and only supported network
   5042002: [
     { url: 'https://rpc.testnet.arc.network', provider: 'Arc Official', priority: 1, maxRetries: 5 },
   ],
@@ -175,10 +150,6 @@ const healthMonitor = new RpcHealthMonitor();
 // ────────────────────────────────────────────────────────────────────────
 
 const CHAIN_MAP: Record<number, Chain> = {
-  1: mainnet,
-  137: polygon,
-  42161: arbitrum,
-  8453: base,
   5042002: arcTestnet,
 };
 

@@ -3,10 +3,10 @@ import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { defineChain } from 'viem'
 
 // ═══════════════════════════════════════════════════════════════════════
-// CHAIN CONFIGURATIONS
+// CHAIN CONFIGURATION - ARC NETWORK ONLY
 // ═══════════════════════════════════════════════════════════════════════
 
-// Arc Testnet (original - for testing on Arc network)
+// Arc Testnet - Primary network for ArcCards dApp
 export const arcTestnet = defineChain({
   id: 5042002,
   name: 'Arc Testnet',
@@ -16,53 +16,8 @@ export const arcTestnet = defineChain({
   testnet: true,
 })
 
-// Base Sepolia (L2 testnet - FREE gas, 2s finality)
-export const baseSepolia = defineChain({
-  id: 84532,
-  name: 'Base Sepolia',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { 
-    default: { http: ['https://sepolia.base.org'] },
-    public: { http: ['https://sepolia.base.org'] }
-  },
-  blockExplorers: { default: { name: 'BaseScan', url: 'https://sepolia.basescan.org' } },
-  testnet: true,
-})
-
-// Base Mainnet (L2 production - $0.01 gas, 99% cheaper than Ethereum)
-export const baseMainnet = defineChain({
-  id: 8453,
-  name: 'Base',
-  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { 
-    default: { http: ['https://mainnet.base.org'] },
-    public: { http: ['https://mainnet.base.org'] }
-  },
-  blockExplorers: { default: { name: 'BaseScan', url: 'https://basescan.org' } },
-  testnet: false,
-})
-
-// ═══════════════════════════════════════════════════════════════════════
-// ACTIVE CHAIN SELECTION
-// ═══════════════════════════════════════════════════════════════════════
-// Set VITE_ACTIVE_CHAIN in .env to switch chains:
-//   "baseSepolia" - Base testnet (recommended for development)
-//   "base"        - Base mainnet (production)
-//   "arc"         - Arc testnet (original)
-
-const ACTIVE_CHAIN = import.meta.env.VITE_ACTIVE_CHAIN || 'baseSepolia'
-
-export const getActiveChain = () => {
-  switch (ACTIVE_CHAIN) {
-    case 'base':
-      return baseMainnet
-    case 'arc':
-      return arcTestnet
-    case 'baseSepolia':
-    default:
-      return baseSepolia
-  }
-}
+// Always return Arc Testnet
+export const getActiveChain = () => arcTestnet
 
 // ═══════════════════════════════════════════════════════════════════════
 // APPKIT CONFIGURATION
@@ -70,9 +25,8 @@ export const getActiveChain = () => {
 
 const PROJECT_ID = import.meta.env.VITE_REOWN_PROJECT_ID
 
-// Always include all supported chains in AppKit for easy switching
-// Users can switch between chains in wallet UI
-const networks = [baseSepolia, baseMainnet, arcTestnet]
+// Only Arc Testnet supported
+const networks = [arcTestnet]
 
 export const wagmiAdapter = new WagmiAdapter({ 
   networks, 

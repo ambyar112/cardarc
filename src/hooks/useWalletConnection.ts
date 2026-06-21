@@ -51,10 +51,6 @@ export interface UseWalletConnectionReturn {
 // ────────────────────────────────────────────────────────────────────────
 
 const CHAIN_CONFIG: Record<number, { name: string; explorer: string }> = {
-  1: { name: 'Ethereum', explorer: 'https://etherscan.io' },
-  137: { name: 'Polygon', explorer: 'https://polygonscan.com' },
-  8453: { name: 'Base', explorer: 'https://basescan.org' },
-  42161: { name: 'Arbitrum', explorer: 'https://arbiscan.io' },
   5042002: { name: 'Arc Testnet', explorer: 'https://explorer.testnet.arc.network' },
 };
 
