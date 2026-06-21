@@ -40,7 +40,7 @@ export default function ListModal({ card, walletAddress, onClose, onListed }) {
       // If not minted yet, mint it first (gacha only creates DB record, not on-chain NFT)
       if (!tokenId) {
         setStep('minting')
-        const mintRes = await mintCardNFT(card.id)
+        const mintRes = await mintCardNFT(walletAddress, card)
         if (!mintRes.success) {
           setStep('error')
           setErrorMsg('Gagal mint card: ' + mintRes.error)
