@@ -324,7 +324,9 @@ export default function Marketplace() {
   const loadListings = useCallback(async () => {
     setLoadingL(true)
     const onChain = await fetchOnChainListings(50)
+    
     if (onChain.length > 0) {
+      // On-chain listings exist - enrich with Supabase data
       const sbData = await getActiveListingsFromSupabase(50)
       const sbMap = {}
       sbData.forEach(s => {
@@ -361,7 +363,25 @@ export default function Marketplace() {
         setListings([...resolved])
       }
     } else {
-      setListings([])
+      // No on-chain listings - fallback to Supabase cache
+      console.log('No on-chain listings found, falling back to Supabase cache')
+      const sbData = await getActiveListingsFromSupabase(50)
+      if (sbData && sbData.length > 0) {
+        // Convert Supabase format to match on-chain format
+        const supabaseListings = sbData.map(s => ({
+          listingId: s.on_chain_listing_id || s.id,
+          seller: s.seller,
+          cardId: s.card_id,
+          price: s.price_wei || parseEther(s.price_eth?.toString() || '0').toString(),
+          card_name: s.card_name,
+          card_img: s.card_img,
+          tier: s.tier || 'common',
+          set_id: s.set_id,
+        }))
+        setListings(supabaseListings)
+      } else {
+        setListings([])
+      }
       setLoadingL(false)
     }
   }, [])
@@ -401,12 +421,19 @@ export default function Marketplace() {
   function toggleSelectMode() { setSelectMode(v => { if (v) setBulkSelected(new Set()); return !v }) }
   function toggleCard(card) { setBulkSelected(prev => { const n=new Set(prev); n.has(card.id)?n.delete(card.id):n.add(card.id); return n }) }
 
-  const filteredListings = listings.filter(l => {
+  const browseListings = listings.filter(l => {
     if (!selectedPack) return true
     const g=gameLabel(l.cardId)
     return selectedPack==='pokemon'?g==='⚡ PKM':selectedPack==='yugioh'?g==='⚔️ YGO':selectedPack==='dragonball'?g==='🔥 DBS':true
   })
-  const myListings = listings.filter(l => address && l.seller.toLowerCase() === address.toLowerCase())
+  const myListings = listings.filter(l => {
+    if (!address) return false
+    const isOwn = l.seller.toLowerCase() === address.toLowerCase()
+    if (!isOwn) return false
+    if (!selectedPack) return true
+    const g=gameLabel(l.cardId)
+    return selectedPack==='pokemon'?g==='⚡ PKM':selectedPack==='yugioh'?g==='⚔️ YGO':selectedPack==='dragonball'?g==='🔥 DBS':true
+  })
   const filteredSellCards = myCards.filter(c => {
     const t=sellTierFilter==='all'||c.tier===sellTierFilter
     const s=!sellSearch||c.name.toLowerCase().includes(sellSearch.toLowerCase())
@@ -429,7 +456,7 @@ export default function Marketplace() {
 
   function handlePackSelect(pack) {
     setSelectedPack(pack)
-    setTab('listings')
+    setTab('browse')
   }
 
   return (
@@ -450,9 +477,9 @@ export default function Marketplace() {
           <div className="glass p-1 rounded-xl flex items-center gap-1">
             {[
               { id:'packs',    label:'Packs',          count:null },
-              { id:'listings', label:'Active Listings', count:filteredListings.length },
-              { id:'my',       label:'My Listings',     count:myListings.length },
-              { id:'history',  label:'Trade History',   count:null },
+              { id:'browse',   label:'Browse',         count:browseListings.length },
+              { id:'my',       label:'My Listings',    count:myListings.length },
+              { id:'history',  label:'History',        count:null },
             ].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)}
                 className={`font-body text-xs px-4 py-2.5 rounded-lg font-semibold transition-colors ${
@@ -508,31 +535,26 @@ export default function Marketplace() {
         </div>
       )}
 
-      {/* ── ACTIVE LISTINGS ── */}
-      {tab === 'listings' && (<>
-        {loadingL ? (
-          <div className="flex items-center justify-center gap-2 py-8">
-            <span className="font-mono text-xs text-on-surface-variant">Loading...</span>
-          </div>
-        ) : filteredListings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-6">
-            <div className="w-24 h-24 rounded-3xl flex items-center justify-center" style={{ background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.08)' }}>
-              <span className="material-symbols-outlined" style={{ fontSize:44, color:'#9aa3b2' }}>storefront</span>
-            </div>
-            <div className="text-center flex flex-col gap-2 max-w-sm">
-              <h2 className="font-mono font-bold uppercase tracking-widest" style={{ fontSize:16, color:'#eef2ff' }}>Belum Ada Listing</h2>
-              <p className="font-mono text-[12px]" style={{ color:'#6b7280' }}>Jadilah yang pertama! Pergi ke <strong style={{ color:'#f5c84c' }}>🏷️ Sell Cards</strong></p>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {filteredListings.map(l => (
-              <ListingCard key={l.listingId} listing={l} address={address}
-                onBuy={isConnected ? setBuyTarget : ()=>{}} onCancel={handleCancel} onEdit={setEditTarget} cancelingId={cancelingId} />
-            ))}
-          </div>
-        )}
-      </>)}
+      {/* ── BROWSE ALL LISTINGS ── */}
+      {tab === 'browse' && (loadingL ? (
+        <div className="flex items-center justify-center gap-2 py-12">
+          <span className="font-mono text-xs" style={{ color:'#9aa3b2' }}>Loading listings...</span>
+        </div>
+      ) : browseListings.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-4">
+          <span className="text-5xl">🛒</span>
+          <p className="font-mono font-bold text-sm" style={{ color:'#eef2ff' }}>Tidak ada listing aktif</p>
+          <p className="font-mono text-[11px] text-center max-w-xs" style={{ color:'#6b7280' }}>Belum ada kartu yang dijual untuk {selectedPack === 'pokemon' ? 'Pokemon' : selectedPack === 'yugioh' ? 'Yugioh' : selectedPack === 'dragonball' ? 'Dragon Ball' : 'kategori ini'}.</p>
+          <button onClick={() => setTab('packs')} className="px-6 py-2.5 rounded-xl font-mono font-bold text-xs" style={{ background:'rgba(255,255,255,.05)', color:'#9aa3b2', border:'1px solid rgba(255,255,255,.1)' }}>← Pilih Pack Lain</button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {browseListings.map(l => (
+            <ListingCard key={l.listingId} listing={l} address={address}
+              onBuy={setBuyTarget} onCancel={handleCancel} onEdit={setEditTarget} cancelingId={cancelingId} />
+          ))}
+        </div>
+      ))}
 
       {/* ── MY LISTINGS ── */}
       {tab === 'my' && (!isConnected ? (

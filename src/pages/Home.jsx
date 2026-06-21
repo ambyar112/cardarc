@@ -78,6 +78,7 @@ function PackCard({ pack, onClick }) {
         transition: 'all 0.4s cubic-bezier(0.4,0,0.2,1)',
         backdropFilter: 'blur(20px)',
         WebkitTapHighlightColor: 'transparent',
+        minHeight: '380px',
       }}
       onMouseEnter={e => {
         e.currentTarget.style.border = `1px solid rgba(${pack.accentRgb},0.6)`
@@ -107,7 +108,7 @@ function PackCard({ pack, onClick }) {
         style={{ background: `linear-gradient(135deg, transparent 0%, rgba(${pack.accentRgb},0.05) 50%, transparent 100%)` }} />
 
       {/* Card image — optimized with LazyImage component */}
-      <div className="relative h-56 overflow-hidden bg-[#05050a]">
+      <div className="relative h-56 overflow-hidden bg-[#05050a]" style={{ minHeight: '224px' }}>
         <div key={idx} style={{
           opacity: fading ? 0 : 1,
           transition: 'opacity 0.3s ease',

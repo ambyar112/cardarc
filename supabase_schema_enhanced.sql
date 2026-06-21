@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS collection (
   level               int,
   
   -- Blockchain data
-  token_id            bigint,
+  nft_token_id        bigint,
   on_chain_balance    int DEFAULT 1,
   
   created_at          timestamptz DEFAULT now(),

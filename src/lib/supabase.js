@@ -62,22 +62,23 @@ export async function getCollection(wallet) {
   return data || []
 }
 
-export async function addToCollection(wallet, card) {
+export async function addToCollection(wallet, card, nftTokenId = null) {
   try {
     const { error } = await supabase.from('collection').upsert({
-      wallet:    normalizeWallet(wallet),
-      card_id:   sanitizeText(card.id, 100),
-      card_name: sanitizeText(card.name, 200),
-      card_img:  validateImgUrl(card.img),
-      tier:      validateTier(card.tier),
-      set_id:    sanitizeText(card.setId, 50) || null,
-      local_id:  sanitizeText(String(card.localId ?? ''), 50),
-      hp:        sanitizeText(String(card.hp ?? ''), 20),
-      types:     sanitizeText(card.types, 100) || null,
-      rarity:    sanitizeText(card.rarity, 100) || null,
-      atk:       card.atk != null ? Number(card.atk) : null,
-      def:       card.def != null ? Number(card.def) : null,
-      level:     card.level != null ? Number(card.level) : null,
+      wallet:         normalizeWallet(wallet),
+      card_id:        sanitizeText(card.id, 100),
+      card_name:      sanitizeText(card.name, 200),
+      card_img:       validateImgUrl(card.img),
+      tier:           validateTier(card.tier),
+      set_id:         sanitizeText(card.setId, 50) || null,
+      local_id:       sanitizeText(String(card.localId ?? ''), 50),
+      hp:             sanitizeText(String(card.hp ?? ''), 20),
+      types:          sanitizeText(card.types, 100) || null,
+      rarity:         sanitizeText(card.rarity, 100) || null,
+      atk:            card.atk != null ? Number(card.atk) : null,
+      def:            card.def != null ? Number(card.def) : null,
+      level:          card.level != null ? Number(card.level) : null,
+      nft_token_id:   nftTokenId != null ? String(nftTokenId) : null,
     }, { onConflict: 'wallet,card_id' })
     if (error) console.error('addToCollection error:', error.message)
     return !error

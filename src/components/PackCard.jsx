@@ -8,7 +8,8 @@ const PACK_THEMES = {
     glow: 'rgba(251,191,36,0.4)',
     borderGlow: 'rgba(251,191,36,0.6)',
     bgPattern: 'radial-gradient(circle at 20% 30%, rgba(239,68,68,0.08) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(59,130,246,0.08) 0%, transparent 50%)',
-    packGradient: 'linear-gradient(135deg, #dc2626 0%, #fbbf24 50%, #2563eb 100%)',
+    packGradient: 'linear-gradient(135deg, rgba(239,68,68,0.25) 0%, rgba(251,191,36,0.30) 50%, rgba(59,130,246,0.25) 100%)',
+    packBg: 'rgba(251,191,36,0.15)',
     packLabel: 'P',
   },
   yugioh: {
@@ -20,7 +21,8 @@ const PACK_THEMES = {
     glow: 'rgba(245,200,76,0.4)',
     borderGlow: 'rgba(245,200,76,0.6)',
     bgPattern: 'radial-gradient(circle at 30% 40%, rgba(245,200,76,0.08) 0%, transparent 50%), radial-gradient(circle at 70% 60%, rgba(120,53,15,0.08) 0%, transparent 50%)',
-    packGradient: 'linear-gradient(135deg, #78350f 0%, #f5c84c 50%, #ca8a04 100%)',
+    packGradient: 'linear-gradient(135deg, rgba(120,53,15,0.25) 0%, rgba(245,200,76,0.30) 50%, rgba(202,138,4,0.25) 100%)',
+    packBg: 'rgba(245,200,76,0.15)',
     packLabel: 'Y',
   },
   dragonball: {
@@ -32,12 +34,13 @@ const PACK_THEMES = {
     glow: 'rgba(249,115,22,0.4)',
     borderGlow: 'rgba(249,115,22,0.6)',
     bgPattern: 'radial-gradient(circle at 25% 35%, rgba(249,115,22,0.08) 0%, transparent 50%), radial-gradient(circle at 75% 65%, rgba(239,68,68,0.08) 0%, transparent 50%)',
-    packGradient: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #b91c1c 100%)',
+    packGradient: 'linear-gradient(135deg, rgba(249,115,22,0.25) 0%, rgba(239,68,68,0.30) 50%, rgba(220,38,38,0.25) 100%)',
+    packBg: 'rgba(249,115,22,0.15)',
     packLabel: 'D',
   },
 }
 
-function PackArt({ game, accent, packGradient, packLabel }) {
+function PackArt({ game, accent, packGradient, packBg, packLabel }) {
   const getArtDesign = () => {
     if (game === 'pokemon') {
       return (
@@ -81,25 +84,31 @@ function PackArt({ game, accent, packGradient, packLabel }) {
   return (
     <div className="relative w-16 h-20 rounded-lg overflow-hidden shadow-2xl transition-transform duration-500 group-hover:rotate-3 group-hover:scale-110"
       style={{
-        background: packGradient,
-        boxShadow: `0 8px 24px ${accent}40, inset 0 1px 0 rgba(255,255,255,0.3)`,
+        background: packBg,
+        backdropFilter: 'blur(8px)',
+        border: `1px solid ${accent}40`,
+        boxShadow: `0 4px 16px ${accent}30, inset 0 1px 0 rgba(255,255,255,0.1)`,
       }}
     >
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 opacity-60" style={{ background: packGradient }} />
       {/* Game-specific art design */}
-      {getArtDesign()}
+      <div className="relative z-10">
+        {getArtDesign()}
+      </div>
       {/* Foil shine effect */}
-      <div className="absolute inset-0 opacity-60"
+      <div className="absolute inset-0 opacity-40 z-20 pointer-events-none"
         style={{
-          background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)',
+          background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)',
           animation: 'packShine 3s ease-in-out infinite',
         }}
       />
       {/* Top foil line */}
-      <div className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)' }}
+      <div className="absolute top-0 left-0 right-0 h-px z-20"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)' }}
       />
       {/* Pack label */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
         <span className="font-mono font-black text-2xl text-white drop-shadow-lg" style={{
           textShadow: '0 2px 4px rgba(0,0,0,0.5), 0 0 8px rgba(255,255,255,0.3)'
         }}>
@@ -107,9 +116,9 @@ function PackArt({ game, accent, packGradient, packLabel }) {
         </span>
       </div>
       {/* Bottom dark band */}
-      <div className="absolute bottom-0 left-0 right-0 h-3 bg-black/40 backdrop-blur-sm" />
+      <div className="absolute bottom-0 left-0 right-0 h-3 bg-black/20 backdrop-blur-sm z-10" />
       {/* Side highlight */}
-      <div className="absolute top-0 bottom-0 left-0 w-1 bg-white/30" />
+      <div className="absolute top-0 bottom-0 left-0 w-1 bg-white/20 z-10" />
     </div>
   )
 }
@@ -169,6 +178,7 @@ export default function PackCard({ game, count, onClick, loading }) {
               game={game}
               accent={theme.accent}
               packGradient={theme.packGradient}
+              packBg={theme.packBg}
               packLabel={theme.packLabel}
             />
             <div>

@@ -434,15 +434,20 @@ export default function Gacha() {
         setLog(prev => [{ ...card, qty: 1, packLabel: selectedPack.label }, ...prev].slice(0, 20))
 
         if (isConnected && address) {
-          // Run log + collection in parallel — both must succeed
-          const [logOk, colOk] = await Promise.all([
-            logPull(address, card, 1),
-            addToCollection(address, card),
-          ])
-          if (!logOk || !colOk) console.warn('Partial write failure on single pull')
+          // Log pull first (non-blocking for UX)
+          logPull(address, card, 1).catch(e => console.warn('logPull failed:', e.message))
 
-          // Mint NFT in background — non-blocking, failure is non-critical for testnet
-          mintCardNFT(address, card).catch(e => console.warn('Mint skipped:', e.message))
+          // Mint NFT on-chain immediately — await result to get tokenId
+          let nftTokenId = null
+          try {
+            nftTokenId = await mintCardNFT(address, card)
+            console.log('✅ Minted NFT tokenId:', nftTokenId)
+          } catch (e) {
+            console.warn('Mint failed, saving collection without tokenId:', e.message)
+          }
+
+          // Save to collection with real tokenId
+          addToCollection(address, card, nftTokenId).catch(e => console.warn('addToCollection failed:', e.message))
         }
       } else {
         const cards = Array.from({ length: 10 }, () => pool[Math.floor(Math.random() * pool.length)])
@@ -455,14 +460,23 @@ export default function Gacha() {
         ].slice(0, 20))
 
         if (isConnected && address) {
-          // Batch log + collection — deduplicate cards for collection
-          await Promise.all([
-            ...cards.map(c => logPull(address, c, 10)),
-            ...cards.map(c => addToCollection(address, c)),
-          ])
+          // Log pulls (non-blocking)
+          cards.forEach(c => logPull(address, c, 10).catch(e => console.warn('logPull failed:', e.message)))
 
-          // Batch mint NFTs in background
-          mintCardBatchNFT(address, cards).catch(e => console.warn('Batch mint skipped:', e.message))
+          // Batch mint NFTs on-chain immediately — await tokenIds
+          let tokenIds = []
+          try {
+            tokenIds = await mintCardBatchNFT(address, cards)
+            console.log('✅ Batch minted NFT tokenIds:', tokenIds)
+          } catch (e) {
+            console.warn('Batch mint failed, saving collections without tokenIds:', e.message)
+          }
+
+          // Save to collection with real tokenIds (match cards[i] → tokenIds[i])
+          cards.forEach((card, i) => {
+            const nftTokenId = tokenIds[i] || null
+            addToCollection(address, card, nftTokenId).catch(e => console.warn('addToCollection failed:', e.message))
+          })
         }
       }
     } catch (e) {

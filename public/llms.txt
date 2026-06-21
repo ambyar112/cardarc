@@ -1,0 +1,62 @@
+# ArcCards - Web3 Trading Card Game Platform
+
+> AI-friendly documentation for ArcCards, a decentralized trading card game marketplace built on Base blockchain.
+
+## About ArcCards
+
+ArcCards is a Web3 decentralized application (dApp) that enables users to collect, trade, and battle with digital trading cards from popular franchises including Pokemon, Yu-Gi-Oh!, and Dragon Ball. Built on Base L2 for low-cost, high-speed transactions.
+
+## Key Features
+
+- **Gacha System**: Open card packs to collect rare and legendary cards
+- **NFT Marketplace**: Buy, sell, and trade cards with other players
+- **Wallet Integration**: Connect via MetaMask, WalletConnect, and other Web3 wallets
+- **Base L2 Blockchain**: Fast transactions with minimal gas fees
+- **Real-time Trading**: Live marketplace with instant price updates
+
+## Technical Stack
+
+- **Frontend**: React, Vite, Tailwind CSS
+- **Blockchain**: Ethereum (Base L2), Solidity Smart Contracts
+- **Wallet**: Wagmi v2, Viem, Reown AppKit
+- **Backend**: Supabase (PostgreSQL), Redis caching
+- **Deployment**: Vercel Edge Network
+
+## Main Pages
+
+- [Home](https://cardarc.vercel.app/) - Landing page and gacha system
+- [Marketplace](https://cardarc.vercel.app/marketplace) - Trade cards with other players
+- [Profile](https://cardarc.vercel.app/profile) - View your collection and stats
+- [Leaderboard](https://cardarc.vercel.app/leaderboard) - Top collectors and traders
+
+## Smart Contracts
+
+- **ArcCards**: ERC-721 NFT contract for card minting and ownership
+- **ArcMarketplace**: Decentralized marketplace for card trading
+- **Network**: Base Sepolia (testnet), Base Mainnet (production)
+
+## Documentation
+
+- [Base L2 Migration Guide](https://github.com/arccc/docs/BASE_L2_MIGRATION.md)
+- [Vercel Deployment Guide](https://github.com/arccc/docs/VERCEL_DEPLOYMENT_GUIDE.md)
+- [Performance Optimization](https://github.com/arccc/docs/PERFORMANCE_OPTIMIZATION.md)
+- [Wallet Recovery Guide](https://github.com/arccc/docs/WALLET_RECOVERY_GUIDE.md)
+
+## API Endpoints
+
+- `/api/gacha/claim` - Claim gacha rewards
+- `/api/webhooks/validate` - Validate blockchain transactions
+
+## Contact & Support
+
+- Website: https://cardarc.vercel.app
+- GitHub: https://github.com/arccc
+- Chain: Base L2 (Chain ID: 8453)
+
+---
+
+**Crawling Policy**: This site allows AI agents to crawl and index public content. Private user data and wallet information are protected and not exposed to crawlers.
+
+**Training Policy**: Public documentation and guides may be used for AI training. User-generated content, transaction data, and personal information are excluded from training datasets.
+
+**Last Updated**: 2026-06-17

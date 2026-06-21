@@ -1,98 +1,136 @@
-// NFT Minting — ArcCards ERC-1155 (Claim Flow)
-// Backend authorizes via /api/gacha/claim → returns signature → contract.claimMint()
+// NFT Minting — ArcCards ERC-1155 (Direct Mint Flow - Opsi 1)
+// Calls mintCard() directly on contract (requires minter role for backend signer)
+// Returns tokenId immediately for collection storage
 import { getWalletClient, getPublicClient } from '@wagmi/core'
 import { wagmiConfig } from './wagmi'
 import { ARC_CARDS_ADDRESS, ARC_CARDS_ABI } from './abi'
 
-const CLAIM_API_URL = import.meta.env.VITE_CLAIM_API_URL || '/api/gacha/claim'
-
-// Generate random 32-byte hex nonce
-function generateNonce() {
-  const bytes = new Uint8Array(32)
-  crypto.getRandomValues(bytes)
-  return '0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
-// Request signature from backend after gacha pull
-async function requestClaimSignature(wallet, cardId, nonce) {
-  const response = await fetch(CLAIM_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ wallet, cardId, nonce }),
-  })
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.reason || `Claim API error: ${response.status}`)
-  }
-
-  const data = await response.json()
-  if (!data.success || !data.signature) {
-    throw new Error(data.reason || 'No signature returned')
-  }
-
-  return data.signature
-}
-
-// Mint 1 kartu via claimMint (backend-authorized)
+// Mint 1 kartu directly via mintCard() — returns tokenId
 export async function mintCardNFT(address, card) {
   try {
     const walletClient = await getWalletClient(wagmiConfig)
     if (!walletClient) throw new Error('No wallet client')
 
     const cardId = card.id
-    const nonce = generateNonce()
+    const amount = 1
 
-    // Get signature from backend (verifies gacha pull, prevents double-claim)
-    const signature = await requestClaimSignature(address, cardId, nonce)
-
-    // Call claimMint on contract (user signs, contract validates sig)
+    // Call mintCard directly — user pays gas, contract mints to their address
     const hash = await walletClient.writeContract({
       address: ARC_CARDS_ADDRESS,
       abi: ARC_CARDS_ABI,
-      functionName: 'claimMint',
-      args: [address, cardId, nonce, signature],
+      functionName: 'mintCard',
+      args: [address, cardId, amount],
     })
 
-    console.log('Claim mint tx:', hash)
-    return { success: true, hash }
+    console.log('Mint tx:', hash)
+
+    // Wait for receipt to get tokenId from Transfer event
+    const publicClient = getPublicClient(wagmiConfig)
+    const receipt = await publicClient.waitForTransactionReceipt({ hash })
+
+    // Parse TransferSingle event to get tokenId
+    let tokenId = null
+    for (const log of receipt.logs) {
+      try {
+        const decoded = publicClient.decodeEventLog({
+          abi: ARC_CARDS_ABI,
+          data: log.data,
+          topics: log.topics,
+        })
+        if (decoded.eventName === 'TransferSingle' || decoded.eventName === 'CardMinted') {
+          tokenId = decoded.args?.tokenId ?? decoded.args?.id ?? decoded.args?.[3] ?? null
+          break
+        }
+      } catch {
+        // Not our event, skip
+      }
+    }
+
+    // If no tokenId from event, compute it from cardId mapping
+    if (tokenId === null) {
+      try {
+        tokenId = await publicClient.readContract({
+          address: ARC_CARDS_ADDRESS,
+          abi: ARC_CARDS_ABI,
+          functionName: 'cardIdToTokenId',
+          args: [cardId],
+        })
+        tokenId = Number(tokenId)
+      } catch {
+        tokenId = null
+      }
+    }
+
+    console.log('✅ Minted tokenId:', tokenId, 'for cardId:', cardId)
+    return tokenId
   } catch (e) {
-    console.error('Claim mint failed:', e.message)
-    return { success: false, error: e.message }
+    console.error('Mint failed:', e.message)
+    throw e
   }
 }
 
-// Batch claim mint
+// Batch mint — mints all cards in one tx, returns array of tokenIds
 export async function mintCardBatchNFT(address, cards) {
   try {
     const walletClient = await getWalletClient(wagmiConfig)
     if (!walletClient) throw new Error('No wallet client')
 
-    const signatures = []
-    const nonces = []
-    const cardIds = []
-
-    // Request signature for each card sequentially
-    for (const card of cards) {
-      const nonce = generateNonce()
-      const sig = await requestClaimSignature(address, card.id, nonce)
-      signatures.push(sig)
-      nonces.push(nonce)
-      cardIds.push(card.id)
-    }
+    const cardIds = cards.map(c => c.id)
+    const amounts = cards.map(() => 1)
 
     const hash = await walletClient.writeContract({
       address: ARC_CARDS_ADDRESS,
       abi: ARC_CARDS_ABI,
-      functionName: 'claimMintBatch',
-      args: [address, cardIds, nonces, signatures],
+      functionName: 'mintCardBatch',
+      args: [address, cardIds, amounts],
     })
 
-    console.log('Batch claim mint tx:', hash)
-    return { success: true, hash }
+    console.log('Batch mint tx:', hash)
+
+    // Wait for receipt
+    const publicClient = getPublicClient(wagmiConfig)
+    const receipt = await publicClient.waitForTransactionReceipt({ hash })
+
+    // Parse all TransferSingle events to get tokenIds
+    const tokenIds = []
+    for (const log of receipt.logs) {
+      try {
+        const decoded = publicClient.decodeEventLog({
+          abi: ARC_CARDS_ABI,
+          data: log.data,
+          topics: log.topics,
+        })
+        if (decoded.eventName === 'TransferSingle' || decoded.eventName === 'CardMinted') {
+          const tid = decoded.args?.tokenId ?? decoded.args?.id ?? decoded.args?.[3] ?? null
+          if (tid !== null) tokenIds.push(Number(tid))
+        }
+      } catch {
+        // Not our event, skip
+      }
+    }
+
+    // If events didn't yield enough tokenIds, compute from cardIdToTokenId mapping
+    if (tokenIds.length < cards.length) {
+      for (const cardId of cardIds) {
+        try {
+          const tid = await publicClient.readContract({
+            address: ARC_CARDS_ADDRESS,
+            abi: ARC_CARDS_ABI,
+            functionName: 'cardIdToTokenId',
+            args: [cardId],
+          })
+          tokenIds.push(Number(tid))
+        } catch {
+          tokenIds.push(null)
+        }
+      }
+    }
+
+    console.log('✅ Batch minted tokenIds:', tokenIds)
+    return tokenIds
   } catch (e) {
-    console.error('Batch claim mint failed:', e.message)
-    return { success: false, error: e.message }
+    console.error('Batch mint failed:', e.message)
+    throw e
   }
 }
 

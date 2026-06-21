@@ -34,14 +34,22 @@ export default function ListModal({ card, walletAddress, onClose, onListed }) {
     const p = parseFloat(price)
 
     try {
-      // TEMPORARY WORKAROUND: Skip on-chain minting for now
-      // Cards from gacha are DB-only. Full on-chain mint flow needs gacha refactor.
-      // For now, marketplace listings are Supabase-only (off-chain metadata).
-      
-      // Just use a dummy tokenId (cardId hash or timestamp)
-      const tokenId = Math.abs(card.id.split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0))
+      // Use real tokenId from collection (set during gacha mint)
+      // If missing (legacy card), mint on-chain first
+      let tokenId = card.nft_token_id
 
-      // 1. Approve marketplace if not yet approved
+      if (!tokenId) {
+        // Legacy card without on-chain mint — mint it now
+        setStep('minting')
+        tokenId = await mintCardNFT(walletAddress, card)
+        if (!tokenId && tokenId !== 0) {
+          setStep('error')
+          setErrorMsg('Gagal mint kartu ke blockchain')
+          return
+        }
+      }
+
+      // Approve marketplace if not yet approved
       setStep('approving')
       const approved = await isMarketplaceApproved(walletAddress)
       if (!approved) {
