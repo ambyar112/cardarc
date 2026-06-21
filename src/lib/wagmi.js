@@ -2,6 +2,11 @@ import { createAppKit } from '@reown/appkit/react'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { defineChain } from 'viem'
 
+// ═══════════════════════════════════════════════════════════════════════
+// CHAIN CONFIGURATIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+// Arc Testnet (original - for testing on Arc network)
 export const arcTestnet = defineChain({
   id: 5042002,
   name: 'Arc Testnet',
@@ -11,10 +16,69 @@ export const arcTestnet = defineChain({
   testnet: true,
 })
 
-const PROJECT_ID = import.meta.env.VITE_REOWN_PROJECT_ID
-const networks   = [arcTestnet]
+// Base Sepolia (L2 testnet - FREE gas, 2s finality)
+export const baseSepolia = defineChain({
+  id: 84532,
+  name: 'Base Sepolia',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: { 
+    default: { http: ['https://sepolia.base.org'] },
+    public: { http: ['https://sepolia.base.org'] }
+  },
+  blockExplorers: { default: { name: 'BaseScan', url: 'https://sepolia.basescan.org' } },
+  testnet: true,
+})
 
-export const wagmiAdapter = new WagmiAdapter({ networks, projectId: PROJECT_ID })
+// Base Mainnet (L2 production - $0.01 gas, 99% cheaper than Ethereum)
+export const baseMainnet = defineChain({
+  id: 8453,
+  name: 'Base',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: { 
+    default: { http: ['https://mainnet.base.org'] },
+    public: { http: ['https://mainnet.base.org'] }
+  },
+  blockExplorers: { default: { name: 'BaseScan', url: 'https://basescan.org' } },
+  testnet: false,
+})
+
+// ═══════════════════════════════════════════════════════════════════════
+// ACTIVE CHAIN SELECTION
+// ═══════════════════════════════════════════════════════════════════════
+// Set VITE_ACTIVE_CHAIN in .env to switch chains:
+//   "baseSepolia" - Base testnet (recommended for development)
+//   "base"        - Base mainnet (production)
+//   "arc"         - Arc testnet (original)
+
+const ACTIVE_CHAIN = import.meta.env.VITE_ACTIVE_CHAIN || 'baseSepolia'
+
+export const getActiveChain = () => {
+  switch (ACTIVE_CHAIN) {
+    case 'base':
+      return baseMainnet
+    case 'arc':
+      return arcTestnet
+    case 'baseSepolia':
+    default:
+      return baseSepolia
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// APPKIT CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════════
+
+const PROJECT_ID = import.meta.env.VITE_REOWN_PROJECT_ID
+
+// Always include all supported chains in AppKit for easy switching
+// Users can switch between chains in wallet UI
+const networks = [baseSepolia, baseMainnet, arcTestnet]
+
+export const wagmiAdapter = new WagmiAdapter({ 
+  networks, 
+  projectId: PROJECT_ID,
+  ssr: false
+})
 export const wagmiConfig  = wagmiAdapter.wagmiConfig
 
 createAppKit({
@@ -67,34 +131,49 @@ function isSessionExpired() {
 }
 
 if (typeof window !== 'undefined') {
-  // On load — allow Wagmi to attempt auto-reconnection first
-  // Only clear session if it's truly expired (4+ hours)
-  // Updated timestamp on load to allow reconnection to proceed
-  if (isSessionExpired()) {
-    // Session is genuinely old (4+ hours), clear it
-    clearWalletSession()
-  } else {
-    // Session is recent, allow Wagmi to auto-reconnect
-    // Update timestamp to reflect page load
-    try { localStorage.setItem('arc_session_ts', String(Date.now())) } catch {}
+  // ── Browser-close auto-disconnect ────────────────────────────
+  // sessionStorage is per-tab and CLEARED when the browser is closed.
+  // On load: if sessionStorage flag is missing, this is a fresh browser
+  // session → clear all persisted wallet data so Wagmi cannot reconnect.
+  // If the flag exists, the tab was refreshed mid-session → allow reconnect.
+
+  const SESSION_FLAG = 'arc_browser_session_active'
+
+  function isNewBrowserSession() {
+    try {
+      return !sessionStorage.getItem(SESSION_FLAG)
+    } catch { return true }
   }
 
-  // On tab becomes visible again (after sleep/wake, tab switch)
+  function markSessionActive() {
+    try { sessionStorage.setItem(SESSION_FLAG, '1') } catch {}
+  }
+
+  if (isNewBrowserSession()) {
+    // Fresh browser open (or browser was closed & reopened) — wipe wallet state
+    clearWalletSession()
+  } else {
+    // Tab refresh within same browser session — allow Wagmi reconnect
+    // But still enforce 4-hour expiry
+    if (isSessionExpired()) {
+      clearWalletSession()
+    } else {
+      try { localStorage.setItem('arc_session_ts', String(Date.now())) } catch {}
+    }
+  }
+  markSessionActive()
+
+  // Also clear on tab close as immediate cleanup
+  window.addEventListener('beforeunload', () => {
+    clearWalletSession()
+    try { sessionStorage.removeItem(SESSION_FLAG) } catch {}
+  })
+
+  // On visibility change — enforce session expiry
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && isSessionExpired()) {
       clearWalletSession()
-      // Force page reload so React state reflects disconnected
       window.location.reload()
     }
   })
-
-  // Update timestamp periodically while active (every 5 min)
-  setInterval(() => {
-    if (document.visibilityState === 'visible') {
-      try { localStorage.setItem('arc_session_ts', String(Date.now())) } catch {}
-    }
-  }, 5 * 60 * 1000)
-
-  // Still clear on tab close as bonus
-  window.addEventListener('beforeunload', clearWalletSession)
 }
