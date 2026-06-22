@@ -31,7 +31,8 @@ const networks = [arcTestnet]
 export const wagmiAdapter = new WagmiAdapter({ 
   networks, 
   projectId: PROJECT_ID,
-  ssr: false
+  ssr: false,
+  defaultNetwork: arcTestnet // Force Arc Testnet as default
 })
 export const wagmiConfig  = wagmiAdapter.wagmiConfig
 
