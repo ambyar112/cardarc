@@ -63,6 +63,7 @@ export async function mintCardNFT(address, card) {
       abi: ARC_CARDS_ABI,
       functionName: 'mintCard',
       args: [address, cardId, amount],
+      chain: { id: ARC_TESTNET_CHAIN_ID },
     })
 
     console.log('Mint tx:', hash)
@@ -125,6 +126,7 @@ export async function mintCardBatchNFT(address, cards) {
       abi: ARC_CARDS_ABI,
       functionName: 'mintCardBatch',
       args: [address, cardIds, amounts],
+      chain: { id: ARC_TESTNET_CHAIN_ID },
     })
 
     console.log('Batch mint tx:', hash)

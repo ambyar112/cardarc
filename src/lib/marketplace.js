@@ -105,6 +105,7 @@ export async function approveMarketplace() {
       abi: ARC_CARDS_ABI,
       functionName: 'setApprovalForAll',
       args: [ARC_MARKETPLACE_ADDRESS, true],
+      chain: { id: ARC_TESTNET_CHAIN_ID },
     })
     const pub = getPublicClient(wagmiConfig)
     await pub.waitForTransactionReceipt({ hash })
@@ -134,6 +135,7 @@ export async function listCard(tokenId, cardId, priceEth) {
       abi: ARC_MARKETPLACE_ABI,
       functionName: 'listCard',
       args: [BigInt(tokenId), cardId, priceWei],
+      chain: { id: ARC_TESTNET_CHAIN_ID },
     })
     const pub = getPublicClient(wagmiConfig)
     const receipt = await pub.waitForTransactionReceipt({ hash })
@@ -166,6 +168,7 @@ export async function purchaseListing(listingId, priceWei) {
       functionName: 'purchase',
       args: [BigInt(listingId)],
       value: BigInt(String(priceWei)),
+      chain: { id: ARC_TESTNET_CHAIN_ID },
     })
     const pub = getPublicClient(wagmiConfig)
     await pub.waitForTransactionReceipt({ hash })
@@ -186,6 +189,7 @@ export async function cancelListing(listingId) {
       abi: ARC_MARKETPLACE_ABI,
       functionName: 'cancelListing',
       args: [BigInt(listingId)],
+      chain: { id: ARC_TESTNET_CHAIN_ID },
     })
     const pub = getPublicClient(wagmiConfig)
     await pub.waitForTransactionReceipt({ hash })
@@ -206,6 +210,7 @@ export async function updateListingPrice(listingId, newPriceEth) {
       abi: ARC_MARKETPLACE_ABI,
       functionName: 'updatePrice',
       args: [BigInt(listingId), parseEther(String(newPriceEth))],
+      chain: { id: ARC_TESTNET_CHAIN_ID },
     })
     const pub = getPublicClient(wagmiConfig)
     await pub.waitForTransactionReceipt({ hash })
