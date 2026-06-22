@@ -14,11 +14,35 @@ async function ensureArcTestnet() {
 
   if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
     console.log(`⚠️ Wallet on chain ${walletClient.chain.id}, switching to Arc Testnet (${ARC_TESTNET_CHAIN_ID})...`)
-    await switchChain(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
+    
+    try {
+      // Try Wagmi switchChain first (works if chain already exists in MetaMask)
+      await switchChain(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
+    } catch (switchError) {
+      console.warn('Wagmi switchChain failed, trying wallet_addEthereumChain...', switchError)
+      
+      // Fallback: Add chain to MetaMask if it doesn't exist
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: `0x${ARC_TESTNET_CHAIN_ID.toString(16)}`,
+            chainName: 'Arc Testnet',
+            nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+            rpcUrls: ['https://rpc.testnet.arc.network'],
+            blockExplorerUrls: ['https://testnet.arcscan.app'],
+          }],
+        })
+        console.log('✅ Arc Testnet added to MetaMask')
+      } catch (addError) {
+        throw new Error(`Failed to add Arc Testnet to MetaMask. Please add it manually: Chain ID ${ARC_TESTNET_CHAIN_ID}, RPC https://rpc.testnet.arc.network`)
+      }
+    }
+    
     // Re-get wallet client after switch — old reference has stale chain
     walletClient = await getWalletClient(wagmiConfig)
     if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
-      throw new Error(`Chain switch failed. Still on chain ${walletClient.chain.id}. Please manually switch MetaMask to Arc Testnet (${ARC_TESTNET_CHAIN_ID}).`)
+      throw new Error(`Chain switch failed. Still on chain ${walletClient.chain.id}. Please manually switch MetaMask to Arc Testnet.`)
     }
     console.log('✅ Switched to Arc Testnet')
   }
