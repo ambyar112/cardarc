@@ -7,45 +7,64 @@ import { ARC_CARDS_ADDRESS, ARC_CARDS_ABI } from './abi'
 
 const ARC_TESTNET_CHAIN_ID = 5042002
 
-// Ensure wallet is on Arc Testnet — blocks tx if switch fails
+// Ensure wallet is on Arc Testnet — FORCE switch via direct MetaMask RPC
 async function ensureArcTestnet() {
-  let walletClient = await getWalletClient(wagmiConfig)
-  if (!walletClient) throw new Error('No wallet client')
-
-  if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
-    console.log(`⚠️ Wallet on chain ${walletClient.chain.id}, switching to Arc Testnet (${ARC_TESTNET_CHAIN_ID})...`)
+  if (!window.ethereum) throw new Error('No wallet detected')
+  
+  const chainIdHex = `0x${ARC_TESTNET_CHAIN_ID.toString(16)}`
+  
+  // Get current chain from MetaMask directly
+  let currentChain
+  try {
+    currentChain = await window.ethereum.request({ method: 'eth_chainId' })
+  } catch {
+    throw new Error('Failed to get current chain from wallet')
+  }
+  
+  if (currentChain !== chainIdHex) {
+    console.log(`⚠️ Wallet on chain ${currentChain}, forcing switch to Arc Testnet (${chainIdHex})...`)
     
+    // Try switch first
     try {
-      // Try Wagmi switchChain first (works if chain already exists in MetaMask)
-      await switchChain(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: chainIdHex }],
+      })
+      console.log('✅ Switched to Arc Testnet')
     } catch (switchError) {
-      console.warn('Wagmi switchChain failed, trying wallet_addEthereumChain...', switchError)
-      
-      // Fallback: Add chain to MetaMask if it doesn't exist
-      try {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: `0x${ARC_TESTNET_CHAIN_ID.toString(16)}`,
-            chainName: 'Arc Testnet',
-            nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
-            rpcUrls: ['https://rpc.testnet.arc.network'],
-            blockExplorerUrls: ['https://testnet.arcscan.app'],
-          }],
-        })
-        console.log('✅ Arc Testnet added to MetaMask')
-      } catch (addError) {
-        throw new Error(`Failed to add Arc Testnet to MetaMask. Please add it manually: Chain ID ${ARC_TESTNET_CHAIN_ID}, RPC https://rpc.testnet.arc.network`)
+      // If chain doesn't exist (error 4902), add it
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: chainIdHex,
+              chainName: 'Arc Testnet',
+              nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+              rpcUrls: ['https://rpc.testnet.arc.network'],
+              blockExplorerUrls: ['https://testnet.arcscan.app'],
+            }],
+          })
+          console.log('✅ Arc Testnet added and switched')
+        } catch (addError) {
+          throw new Error('Failed to add Arc Testnet. Please add manually: Chain ID 5042002')
+        }
+      } else {
+        throw new Error(`Chain switch rejected: ${switchError.message}`)
       }
     }
     
-    // Re-get wallet client after switch — old reference has stale chain
-    walletClient = await getWalletClient(wagmiConfig)
-    if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
-      throw new Error(`Chain switch failed. Still on chain ${walletClient.chain.id}. Please manually switch MetaMask to Arc Testnet.`)
+    // Verify switch succeeded
+    const newChain = await window.ethereum.request({ method: 'eth_chainId' })
+    if (newChain !== chainIdHex) {
+      throw new Error(`Switch failed. Still on chain ${newChain}. Please manually switch MetaMask to Arc Testnet.`)
     }
-    console.log('✅ Switched to Arc Testnet')
   }
+  
+  // Now get Wagmi wallet client (should be on correct chain)
+  const walletClient = await getWalletClient(wagmiConfig)
+  if (!walletClient) throw new Error('No wallet client after switch')
+  
   return walletClient
 }
 
