@@ -7,16 +7,28 @@ import { ARC_CARDS_ADDRESS, ARC_CARDS_ABI } from './abi'
 
 const ARC_TESTNET_CHAIN_ID = 5042002
 
+// Ensure wallet is on Arc Testnet — blocks tx if switch fails
+async function ensureArcTestnet() {
+  let walletClient = await getWalletClient(wagmiConfig)
+  if (!walletClient) throw new Error('No wallet client')
+
+  if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
+    console.log(`⚠️ Wallet on chain ${walletClient.chain.id}, switching to Arc Testnet (${ARC_TESTNET_CHAIN_ID})...`)
+    await switchChain(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
+    // Re-get wallet client after switch — old reference has stale chain
+    walletClient = await getWalletClient(wagmiConfig)
+    if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
+      throw new Error(`Chain switch failed. Still on chain ${walletClient.chain.id}. Please manually switch MetaMask to Arc Testnet (${ARC_TESTNET_CHAIN_ID}).`)
+    }
+    console.log('✅ Switched to Arc Testnet')
+  }
+  return walletClient
+}
+
 // Mint 1 kartu directly via mintCard() — returns tokenId
 export async function mintCardNFT(address, card) {
   try {
-    const walletClient = await getWalletClient(wagmiConfig)
-    if (!walletClient) throw new Error('No wallet client')
-
-    // Force switch to Arc Testnet before transaction
-    if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
-      await switchChain(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
-    }
+    const walletClient = await ensureArcTestnet()
 
     const cardId = card.id
     const amount = 1
@@ -79,13 +91,7 @@ export async function mintCardNFT(address, card) {
 // Batch mint — mints all cards in one tx, returns array of tokenIds
 export async function mintCardBatchNFT(address, cards) {
   try {
-    const walletClient = await getWalletClient(wagmiConfig)
-    if (!walletClient) throw new Error('No wallet client')
-
-    // Force switch to Arc Testnet before transaction
-    if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
-      await switchChain(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
-    }
+    const walletClient = await ensureArcTestnet()
 
     const cardIds = cards.map(c => c.id)
     const amounts = cards.map(() => 1)

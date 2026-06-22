@@ -1,10 +1,30 @@
 // ArcMarketplace on-chain interactions
 // SECURITY: selfMintCard removed — contract no longer has selfMint function.
 //           Cards must be minted via mintCard (onlyMinter) before listing.
-import { getWalletClient, getPublicClient } from '@wagmi/core'
+import { getWalletClient, getPublicClient, switchChain } from '@wagmi/core'
 import { wagmiConfig } from './wagmi'
 import { ARC_CARDS_ADDRESS, ARC_CARDS_ABI, ARC_MARKETPLACE_ADDRESS, ARC_MARKETPLACE_ABI } from './abi'
 import { parseEther, formatEther } from 'viem'
+
+const ARC_TESTNET_CHAIN_ID = 5042002
+
+// Ensure wallet is on Arc Testnet — blocks tx if switch fails
+async function ensureArcTestnet() {
+  let walletClient = await getWalletClient(wagmiConfig)
+  if (!walletClient) throw new Error('No wallet client')
+
+  if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
+    console.log(`⚠️ Wallet on chain ${walletClient.chain.id}, switching to Arc Testnet (${ARC_TESTNET_CHAIN_ID})...`)
+    await switchChain(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
+    // Re-get wallet client after switch — old reference has stale chain
+    walletClient = await getWalletClient(wagmiConfig)
+    if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
+      throw new Error(`Chain switch failed. Still on chain ${walletClient.chain.id}. Please manually switch MetaMask to Arc Testnet (${ARC_TESTNET_CHAIN_ID}).`)
+    }
+    console.log('✅ Switched to Arc Testnet')
+  }
+  return walletClient
+}
 
 // ─── HELPERS ────────────────────────────────────────────────
 
@@ -55,8 +75,7 @@ export async function isMarketplaceApproved(walletAddress) {
 
 export async function approveMarketplace() {
   try {
-    const wc = await getWalletClient(wagmiConfig)
-    if (!wc) throw new Error('No wallet connected')
+    const wc = await ensureArcTestnet()
     const hash = await wc.writeContract({
       address: ARC_CARDS_ADDRESS,
       abi: ARC_CARDS_ABI,
@@ -78,8 +97,7 @@ export async function approveMarketplace() {
 
 export async function listCard(tokenId, cardId, priceEth) {
   try {
-    const wc = await getWalletClient(wagmiConfig)
-    if (!wc) throw new Error('No wallet connected')
+    const wc = await ensureArcTestnet()
 
     // Validate inputs before sending tx
     const priceNum = parseFloat(priceEth)
@@ -117,8 +135,7 @@ export async function listCard(tokenId, cardId, priceEth) {
 
 export async function purchaseListing(listingId, priceWei) {
   try {
-    const wc = await getWalletClient(wagmiConfig)
-    if (!wc) throw new Error('No wallet connected')
+    const wc = await ensureArcTestnet()
     const hash = await wc.writeContract({
       address: ARC_MARKETPLACE_ADDRESS,
       abi: ARC_MARKETPLACE_ABI,
@@ -139,8 +156,7 @@ export async function purchaseListing(listingId, priceWei) {
 
 export async function cancelListing(listingId) {
   try {
-    const wc = await getWalletClient(wagmiConfig)
-    if (!wc) throw new Error('No wallet connected')
+    const wc = await ensureArcTestnet()
     const hash = await wc.writeContract({
       address: ARC_MARKETPLACE_ADDRESS,
       abi: ARC_MARKETPLACE_ABI,
@@ -160,8 +176,7 @@ export async function cancelListing(listingId) {
 
 export async function updateListingPrice(listingId, newPriceEth) {
   try {
-    const wc = await getWalletClient(wagmiConfig)
-    if (!wc) throw new Error('No wallet connected')
+    const wc = await ensureArcTestnet()
     const hash = await wc.writeContract({
       address: ARC_MARKETPLACE_ADDRESS,
       abi: ARC_MARKETPLACE_ABI,
