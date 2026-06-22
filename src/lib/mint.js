@@ -1,15 +1,22 @@
 // NFT Minting — ArcCards ERC-1155 (Direct Mint Flow - Opsi 1)
 // Calls mintCard() directly on contract (requires minter role for backend signer)
 // Returns tokenId immediately for collection storage
-import { getWalletClient, getPublicClient } from '@wagmi/core'
+import { getWalletClient, getPublicClient, switchChain } from '@wagmi/core'
 import { wagmiConfig } from './wagmi'
 import { ARC_CARDS_ADDRESS, ARC_CARDS_ABI } from './abi'
+
+const ARC_TESTNET_CHAIN_ID = 5042002
 
 // Mint 1 kartu directly via mintCard() — returns tokenId
 export async function mintCardNFT(address, card) {
   try {
     const walletClient = await getWalletClient(wagmiConfig)
     if (!walletClient) throw new Error('No wallet client')
+
+    // Force switch to Arc Testnet before transaction
+    if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
+      await switchChain(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
+    }
 
     const cardId = card.id
     const amount = 1
@@ -74,6 +81,11 @@ export async function mintCardBatchNFT(address, cards) {
   try {
     const walletClient = await getWalletClient(wagmiConfig)
     if (!walletClient) throw new Error('No wallet client')
+
+    // Force switch to Arc Testnet before transaction
+    if (walletClient.chain.id !== ARC_TESTNET_CHAIN_ID) {
+      await switchChain(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
+    }
 
     const cardIds = cards.map(c => c.id)
     const amounts = cards.map(() => 1)
