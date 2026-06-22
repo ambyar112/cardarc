@@ -3,12 +3,10 @@
  * BASE L2 DEPLOYMENT SCRIPT
  * ═══════════════════════════════════════════════════════════════════════
  * 
- * Deploys ArcCards + ArcMarketplace to Base L2
- * Gas costs: ~$0.01 vs $50+ on Ethereum mainnet
+ * Deploys ArcCards + ArcMarketplace to Arc Testnet
  * 
  * Usage:
- *   npx hardhat run scripts/deployBase.cjs --network baseSepolia  (testnet)
- *   npx hardhat run scripts/deployBase.cjs --network base          (mainnet)
+ *   npx hardhat run scripts/deployBase.cjs --network arc
  * ═══════════════════════════════════════════════════════════════════════
  */
 
@@ -20,7 +18,7 @@ async function main() {
   const chainId = (await hre.ethers.provider.getNetwork()).chainId;
   
   console.log("\n╔═══════════════════════════════════════════════════════════════╗");
-  console.log("║  🚀 ARCC DEPLOYMENT TO BASE L2                              ║");
+  console.log("║  🚀 ARCC DEPLOYMENT TO ARC NETWORK                         ║");
   console.log("╚═══════════════════════════════════════════════════════════════╝\n");
   console.log(`Network: ${network} (chainId: ${chainId})`);
   console.log(`Deployer: ${deployer.address}`);
@@ -74,13 +72,8 @@ async function main() {
   console.log(`   ArcMarketplaceOptimized: ${marketplaceAddress}\n`);
   
   console.log("🔍 Block Explorers:");
-  if (network === "baseSepolia") {
-    console.log(`   ArcCards:    https://sepolia.basescan.org/address/${cardsAddress}`);
-    console.log(`   Marketplace: https://sepolia.basescan.org/address/${marketplaceAddress}\n`);
-  } else if (network === "base") {
-    console.log(`   ArcCards:    https://basescan.org/address/${cardsAddress}`);
-    console.log(`   Marketplace: https://basescan.org/address/${marketplaceAddress}\n`);
-  }
+  console.log(`   ArcCards:    https://testnet.arcscan.app/address/${cardsAddress}`);
+  console.log(`   Marketplace: https://testnet.arcscan.app/address/${marketplaceAddress}\n`);
   
   console.log("💡 Next Steps:");
   console.log("   1. Verify contracts on BaseScan:");
@@ -102,7 +95,7 @@ async function main() {
       ArcCardsOptimized: cardsAddress,
       ArcMarketplaceOptimized: marketplaceAddress,
     },
-    blockExplorer: network === "baseSepolia" ? "https://sepolia.basescan.org" : "https://basescan.org",
+    blockExplorer: "https://testnet.arcscan.app",
   };
   
   const deploymentsDir = path.join(__dirname, "..", "deployments");
