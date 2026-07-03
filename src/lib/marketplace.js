@@ -1,73 +1,12 @@
 // ArcMarketplace on-chain interactions
 // SECURITY: selfMintCard removed — contract no longer has selfMint function.
 //           Cards must be minted via mintCard (onlyMinter) before listing.
-import { getWalletClient, getPublicClient, switchChain } from '@wagmi/core'
+import { writeContract, getPublicClient, getAccount } from '@wagmi/core'
 import { wagmiConfig } from './wagmi'
 import { ARC_CARDS_ADDRESS, ARC_CARDS_ABI, ARC_MARKETPLACE_ADDRESS, ARC_MARKETPLACE_ABI } from './abi'
 import { parseEther, formatEther } from 'viem'
 
 const ARC_TESTNET_CHAIN_ID = 5042002
-
-// Ensure wallet is on Arc Testnet — FORCE switch via direct MetaMask RPC
-async function ensureArcTestnet() {
-  if (!window.ethereum) throw new Error('No wallet detected')
-  
-  const chainIdHex = `0x${ARC_TESTNET_CHAIN_ID.toString(16)}`
-  
-  // Get current chain from MetaMask directly
-  let currentChain
-  try {
-    currentChain = await window.ethereum.request({ method: 'eth_chainId' })
-  } catch {
-    throw new Error('Failed to get current chain from wallet')
-  }
-  
-  if (currentChain !== chainIdHex) {
-    console.log(`⚠️ Wallet on chain ${currentChain}, forcing switch to Arc Testnet (${chainIdHex})...`)
-    
-    // Try switch first
-    try {
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: chainIdHex }],
-      })
-      console.log('✅ Switched to Arc Testnet')
-    } catch (switchError) {
-      // If chain doesn't exist (error 4902), add it
-      if (switchError.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: chainIdHex,
-              chainName: 'Arc Testnet',
-              nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
-              rpcUrls: ['https://rpc.testnet.arc.network'],
-              blockExplorerUrls: ['https://testnet.arcscan.app'],
-            }],
-          })
-          console.log('✅ Arc Testnet added and switched')
-        } catch (addError) {
-          throw new Error('Failed to add Arc Testnet. Please add manually: Chain ID 5042002')
-        }
-      } else {
-        throw new Error(`Chain switch rejected: ${switchError.message}`)
-      }
-    }
-    
-    // Verify switch succeeded
-    const newChain = await window.ethereum.request({ method: 'eth_chainId' })
-    if (newChain !== chainIdHex) {
-      throw new Error(`Switch failed. Still on chain ${newChain}. Please manually switch MetaMask to Arc Testnet.`)
-    }
-  }
-  
-  // Now get Wagmi wallet client (should be on correct chain)
-  const walletClient = await getWalletClient(wagmiConfig)
-  if (!walletClient) throw new Error('No wallet client after switch')
-  
-  return walletClient
-}
 
 // ─── HELPERS ────────────────────────────────────────────────
 
@@ -118,15 +57,17 @@ export async function isMarketplaceApproved(walletAddress) {
 
 export async function approveMarketplace() {
   try {
-    const wc = await ensureArcTestnet()
-    const hash = await wc.writeContract({
+    const account = getAccount(wagmiConfig)
+    if (!account.address) throw new Error('Wallet not connected')
+    
+    const hash = await writeContract(wagmiConfig, {
       address: ARC_CARDS_ADDRESS,
       abi: ARC_CARDS_ABI,
       functionName: 'setApprovalForAll',
       args: [ARC_MARKETPLACE_ADDRESS, true],
-      chain: { id: ARC_TESTNET_CHAIN_ID },
+      chainId: ARC_TESTNET_CHAIN_ID,
     })
-    const pub = getPublicClient(wagmiConfig)
+    const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
     await pub.waitForTransactionReceipt({ hash })
     return { success: true, hash }
   } catch (e) {
@@ -141,7 +82,8 @@ export async function approveMarketplace() {
 
 export async function listCard(tokenId, cardId, priceEth) {
   try {
-    const wc = await ensureArcTestnet()
+    const account = getAccount(wagmiConfig)
+    if (!account.address) throw new Error('Wallet not connected')
 
     // Validate inputs before sending tx
     const priceNum = parseFloat(priceEth)
@@ -149,14 +91,14 @@ export async function listCard(tokenId, cardId, priceEth) {
     if (!tokenId || tokenId <= 0)   throw new Error('Invalid token ID — card must be minted first')
 
     const priceWei = parseEther(String(priceEth))
-    const hash = await wc.writeContract({
+    const hash = await writeContract(wagmiConfig, {
       address: ARC_MARKETPLACE_ADDRESS,
       abi: ARC_MARKETPLACE_ABI,
       functionName: 'listCard',
       args: [BigInt(tokenId), cardId, priceWei],
-      chain: { id: ARC_TESTNET_CHAIN_ID },
+      chainId: ARC_TESTNET_CHAIN_ID,
     })
-    const pub = getPublicClient(wagmiConfig)
+    const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
     const receipt = await pub.waitForTransactionReceipt({ hash })
 
     // Parse the Listed event to get the real on-chain listingId
@@ -180,16 +122,18 @@ export async function listCard(tokenId, cardId, priceEth) {
 
 export async function purchaseListing(listingId, priceWei) {
   try {
-    const wc = await ensureArcTestnet()
-    const hash = await wc.writeContract({
+    const account = getAccount(wagmiConfig)
+    if (!account.address) throw new Error('Wallet not connected')
+    
+    const hash = await writeContract(wagmiConfig, {
       address: ARC_MARKETPLACE_ADDRESS,
       abi: ARC_MARKETPLACE_ABI,
       functionName: 'purchase',
       args: [BigInt(listingId)],
       value: BigInt(String(priceWei)),
-      chain: { id: ARC_TESTNET_CHAIN_ID },
+      chainId: ARC_TESTNET_CHAIN_ID,
     })
-    const pub = getPublicClient(wagmiConfig)
+    const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
     await pub.waitForTransactionReceipt({ hash })
     return { success: true, hash }
   } catch (e) {
@@ -202,15 +146,17 @@ export async function purchaseListing(listingId, priceWei) {
 
 export async function cancelListing(listingId) {
   try {
-    const wc = await ensureArcTestnet()
-    const hash = await wc.writeContract({
+    const account = getAccount(wagmiConfig)
+    if (!account.address) throw new Error('Wallet not connected')
+    
+    const hash = await writeContract(wagmiConfig, {
       address: ARC_MARKETPLACE_ADDRESS,
       abi: ARC_MARKETPLACE_ABI,
       functionName: 'cancelListing',
       args: [BigInt(listingId)],
-      chain: { id: ARC_TESTNET_CHAIN_ID },
+      chainId: ARC_TESTNET_CHAIN_ID,
     })
-    const pub = getPublicClient(wagmiConfig)
+    const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
     await pub.waitForTransactionReceipt({ hash })
     return { success: true, hash }
   } catch (e) {
@@ -223,15 +169,17 @@ export async function cancelListing(listingId) {
 
 export async function updateListingPrice(listingId, newPriceEth) {
   try {
-    const wc = await ensureArcTestnet()
-    const hash = await wc.writeContract({
+    const account = getAccount(wagmiConfig)
+    if (!account.address) throw new Error('Wallet not connected')
+    
+    const hash = await writeContract(wagmiConfig, {
       address: ARC_MARKETPLACE_ADDRESS,
       abi: ARC_MARKETPLACE_ABI,
       functionName: 'updatePrice',
       args: [BigInt(listingId), parseEther(String(newPriceEth))],
-      chain: { id: ARC_TESTNET_CHAIN_ID },
+      chainId: ARC_TESTNET_CHAIN_ID,
     })
-    const pub = getPublicClient(wagmiConfig)
+    const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
     await pub.waitForTransactionReceipt({ hash })
     return { success: true, hash }
   } catch (e) {
@@ -243,7 +191,7 @@ export async function updateListingPrice(listingId, newPriceEth) {
 
 export async function fetchOnChainListings(count = 50) {
   try {
-    const pub = getPublicClient(wagmiConfig)
+    const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
     // getActiveListings returns (Listing[] result, uint256 total) — destructure correctly
     const [result] = await pub.readContract({
       address: ARC_MARKETPLACE_ADDRESS,

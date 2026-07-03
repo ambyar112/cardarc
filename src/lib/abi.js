@@ -1,8 +1,9 @@
 // ArcCards ERC-1155 + ArcMarketplace
-// ArcCards:       0x00B4add7c37E70690EEE4d14C222e50B926cd2E5
-// ArcMarketplace: 0x2Cee9C1AAd5626C63630aF47641157082F982BbC
+// ArcCards:       0x8757D77aaCF0EEFcf18e9e834557de53A216e4da
+// ArcMarketplace: 0x7B22FADff81836083DCa60EbE006e518D0011D70
 // Network: Arc Testnet (Chain ID: 5042002)
 // Deployer: 0x7778b915e86fBf35d9E1cB7fD5d3fD8A6c0bEBFB
+// Block Explorer: https://testnet.arcscan.app
 
 export const ARC_CARDS_ADDRESS       = import.meta.env.VITE_CONTRACT_ADDRESS
 export const ARC_MARKETPLACE_ADDRESS = import.meta.env.VITE_MARKETPLACE_ADDRESS
