@@ -55,7 +55,7 @@ function validateTier(tier) {
 
 export async function getCollection(wallet) {
   const { data } = await supabase
-    .from('collection')
+    .from('user_collection')
     .select('*')
     .eq('wallet', normalizeWallet(wallet))
     .order('created_at', { ascending: false })
@@ -64,7 +64,7 @@ export async function getCollection(wallet) {
 
 export async function addToCollection(wallet, card, nftTokenId = null) {
   try {
-    const { error } = await supabase.from('collection').upsert({
+    const { error } = await supabase.from('user_collection').upsert({
       wallet:         normalizeWallet(wallet),
       card_id:        sanitizeText(card.id, 100),
       card_name:      sanitizeText(card.name, 200),
