@@ -82,7 +82,7 @@ async function verifyGachaPull(wallet: string, cardId: string): Promise<boolean>
  */
 async function isAlreadyClaimed(wallet: string, cardId: string): Promise<boolean> {
   const { data, error } = await supabaseAdmin
-    .from('collection')
+    .from('user_collection')
     .select('id')
     .eq('wallet', wallet.toLowerCase())
     .eq('card_id', cardId)
