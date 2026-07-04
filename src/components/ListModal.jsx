@@ -35,17 +35,37 @@ export default function ListModal({ card, walletAddress, onClose, onListed }) {
 
     try {
       // Use real tokenId from collection (set during gacha mint)
-      // If missing (legacy card), mint on-chain first
+      // If missing from DB, query blockchain first before attempting mint
       let tokenId = card.nft_token_id
 
-      if (!tokenId) {
-        // Legacy card without on-chain mint — mint it now
+      if (!tokenId && tokenId !== 0) {
+        // Check if card already minted on-chain (query cardToTokenId)
         setStep('minting')
-        tokenId = await mintCardNFT(walletAddress, card)
+        try {
+          tokenId = await getTokenId(card.id)
+        } catch (e) {
+          console.log('Card not yet on blockchain, will attempt mint')
+        }
+
+        // If still no tokenId, mint now (this will only work if card not already minted)
         if (!tokenId && tokenId !== 0) {
-          setStep('error')
-          setErrorMsg('Gagal mint kartu ke blockchain')
-          return
+          try {
+            tokenId = await mintCardNFT(walletAddress, card)
+          } catch (mintError) {
+            // If mint fails because already minted, query blockchain again
+            if (mintError.message?.includes('already minted')) {
+              console.log('Card already minted, querying tokenId from blockchain...')
+              tokenId = await getTokenId(card.id)
+            } else {
+              throw mintError
+            }
+          }
+          
+          if (!tokenId && tokenId !== 0) {
+            setStep('error')
+            setErrorMsg('Gagal mint kartu ke blockchain')
+            return
+          }
         }
       }
 
