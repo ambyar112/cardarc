@@ -81,22 +81,22 @@ async function verifyGachaPull(wallet: string, cardId: string): Promise<boolean>
 }
 
 /**
- * Check if already minted to prevent double-mint
+ * Check if already minted - return existing tokenId if found
  */
-async function isAlreadyMinted(wallet: string, cardId: string): Promise<boolean> {
+async function getExistingMint(wallet: string, cardId: string): Promise<number | null> {
   const { data, error } = await supabaseAdmin
     .from('collection')
-    .select('id')
+    .select('nft_token_id')
     .eq('wallet', wallet.toLowerCase())
     .eq('card_id', cardId)
-    .limit(1);
+    .limit(1)
+    .single();
 
-  if (error) {
-    console.error('Mint check error:', error);
-    return false;
+  if (error || !data) {
+    return null;
   }
 
-  return data && data.length > 0;
+  return data.nft_token_id ?? null;
 }
 
 /**
@@ -163,11 +163,17 @@ export default async function handler(req: Request): Promise<Response> {
       );
     }
 
-    // Check if already minted
-    if (await isAlreadyMinted(wallet, cardId)) {
+    // Check if already minted - return existing tokenId if found
+    const existingTokenId = await getExistingMint(wallet, cardId);
+    if (existingTokenId !== null) {
+      console.log('Card already minted, returning existing tokenId:', existingTokenId);
       return new Response(
-        JSON.stringify({ success: false, reason: 'Card already minted to this wallet' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: true, 
+          tokenId: existingTokenId,
+          reason: 'Already minted (returned existing tokenId)'
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
