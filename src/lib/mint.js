@@ -15,14 +15,13 @@ export async function mintCardNFT(address, card) {
     if (!account.address) throw new Error('Wallet not connected')
 
     const cardId = card.id
-    const amount = 1
 
     // writeContract from @wagmi/core handles chain switching atomically
     const hash = await writeContract(wagmiConfig, {
       address: ARC_CARDS_ADDRESS,
       abi: ARC_CARDS_ABI,
       functionName: 'mintCard',
-      args: [address, cardId, amount],
+      args: [address, cardId],
       chainId: ARC_TESTNET_CHAIN_ID,
     })
 
@@ -80,13 +79,12 @@ export async function mintCardBatchNFT(address, cards) {
     if (!account.address) throw new Error('Wallet not connected')
 
     const cardIds = cards.map(c => c.id)
-    const amounts = cards.map(() => 1)
 
     const hash = await writeContract(wagmiConfig, {
       address: ARC_CARDS_ADDRESS,
       abi: ARC_CARDS_ABI,
       functionName: 'mintCardBatch',
-      args: [address, cardIds, amounts],
+      args: [address, cardIds],
       chainId: ARC_TESTNET_CHAIN_ID,
     })
 
