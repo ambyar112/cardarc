@@ -31,6 +31,11 @@ export async function mintCardNFT(address, card) {
     const publicClient = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
     const receipt = await publicClient.waitForTransactionReceipt({ hash })
 
+    // Verify transaction succeeded
+    if (receipt.status === 'reverted') {
+      throw new Error('Transaction reverted — check minter permissions and contract state')
+    }
+
     // Parse TransferSingle event to get tokenId
     let tokenId = null
     for (const log of receipt.logs) {
