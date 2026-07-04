@@ -23,11 +23,11 @@ import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY;
-const CONTRACT_ADDRESS = process.env.VITE_CONTRACT_ADDRESS;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || process.env.SIGNER_PRIVATE_KEY;
+const CONTRACT_ADDRESS = process.env.VITE_CONTRACT_ADDRESS || process.env.ARC_CARDS_ADDRESS;
 const ARC_RPC_URL = process.env.ARC_RPC_URL || 'https://rpc.testnet.arc.network';
-const CHAIN_ID = 5042002;
+const CHAIN_ID = parseInt(process.env.CHAIN_ID || '5042002');
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   throw new Error('Supabase configuration required');
