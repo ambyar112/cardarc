@@ -64,24 +64,39 @@ export async function getCollection(wallet) {
 
 export async function addToCollection(wallet, card, nftTokenId = null) {
   try {
-    const { error } = await supabase.from('collection').upsert({
-      wallet:         normalizeWallet(wallet),
-      card_id:        sanitizeText(card.id, 100),
-      card_name:      sanitizeText(card.name, 200),
-      card_img:       validateImgUrl(card.img),
-      tier:           validateTier(card.tier),
-      set_id:         sanitizeText(card.setId, 50) || null,
-      local_id:       sanitizeText(String(card.localId ?? ''), 50),
-      hp:             sanitizeText(String(card.hp ?? ''), 20),
-      types:          sanitizeText(card.types, 100) || null,
-      rarity:         sanitizeText(card.rarity, 100) || null,
-      atk:            card.atk != null ? Number(card.atk) : null,
-      def:            card.def != null ? Number(card.def) : null,
-      level:          card.level != null ? Number(card.level) : null,
-      nft_token_id:   nftTokenId != null ? String(nftTokenId) : null,
-    }, { onConflict: 'wallet,card_id' })
-    if (error) console.error('addToCollection error:', error.message)
-    return !error
+    // Call backend API endpoint instead of direct Supabase
+    // This bypasses RLS and handles profile creation automatically
+    const response = await fetch('/api/collection/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        wallet: normalizeWallet(wallet),
+        card: {
+          id: card.id,
+          name: card.name,
+          img: card.img,
+          tier: card.tier,
+          setId: card.setId,
+          localId: card.localId,
+          hp: card.hp,
+          types: card.types,
+          rarity: card.rarity,
+          atk: card.atk,
+          def: card.def,
+          level: card.level,
+        },
+        nftTokenId,
+      }),
+    })
+    
+    const result = await response.json()
+    
+    if (!result.success) {
+      console.error('addToCollection API error:', result.error)
+      return false
+    }
+    
+    return true
   } catch (e) {
     console.error('addToCollection exception:', e)
     return false
