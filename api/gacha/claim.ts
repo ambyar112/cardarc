@@ -82,7 +82,7 @@ async function verifyGachaPull(wallet: string, cardId: string): Promise<boolean>
  */
 async function isAlreadyClaimed(wallet: string, cardId: string): Promise<boolean> {
   const { data, error } = await supabaseAdmin
-    .from('user_collection')
+    .from('collection')
     .select('id')
     .eq('wallet', wallet.toLowerCase())
     .eq('card_id', cardId)
@@ -99,12 +99,13 @@ async function isAlreadyClaimed(wallet: string, cardId: string): Promise<boolean
 /**
  * Mark card as claimed to prevent double-claim.
  */
-async function markAsClaimed(wallet: string, cardId: string): Promise<boolean> {
+async function markAsClaimed(wallet: string, cardId: string, nonce: string): Promise<boolean> {
   const { error } = await supabaseAdmin
     .from('claim_log')
     .insert({
       wallet: wallet.toLowerCase(),
       card_id: cardId,
+      nonce: nonce,
       claimed_at: new Date().toISOString(),
     });
 
@@ -223,7 +224,7 @@ export default async function handler(req: Request): Promise<Response> {
     const signature = await generateClaimSignature(cardId, wallet, nonce);
 
     // Mark as claimed (prevents replay)
-    const marked = await markAsClaimed(wallet, cardId);
+    const marked = await markAsClaimed(wallet, cardId, nonce);
     if (!marked) {
       console.error('Failed to mark as claimed, but allowing signature generation');
     }
