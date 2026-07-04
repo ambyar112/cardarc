@@ -78,9 +78,9 @@ export async function approveMarketplace() {
 
 // ─── WRITE: list a card ──────────────────────────────────────
 // NOTE: tokenId must already exist on-chain (card must have been minted).
-//       The contract now verifies cardId matches tokenIdToCard[tokenId].
+//       Contract derives cardId from tokenIdToCard[tokenId] mapping.
 
-export async function listCard(tokenId, cardId, priceEth) {
+export async function listCard(tokenId, priceEth) {
   try {
     const account = getAccount(wagmiConfig)
     if (!account.address) throw new Error('Wallet not connected')
@@ -95,7 +95,7 @@ export async function listCard(tokenId, cardId, priceEth) {
       address: ARC_MARKETPLACE_ADDRESS,
       abi: ARC_MARKETPLACE_ABI,
       functionName: 'listCard',
-      args: [BigInt(tokenId), cardId, priceWei],
+      args: [BigInt(tokenId), priceWei],
       chainId: ARC_TESTNET_CHAIN_ID,
     })
     const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })

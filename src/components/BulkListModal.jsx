@@ -81,7 +81,7 @@ export default function BulkListModal({ cards, walletAddress, onClose, onDone })
         }
 
         // List on-chain
-        const listRes = await listCard(tokenId, card.id, price)
+        const listRes = await listCard(tokenId, price)
         if (!listRes.success) throw new Error(listRes.error)
 
         // Sync Supabase

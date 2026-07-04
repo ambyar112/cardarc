@@ -63,7 +63,7 @@ export default function ListModal({ card, walletAddress, onClose, onListed }) {
 
       // 3. List on-chain
       setStep('listing')
-      const res = await listCard(tokenId, card.id, p)
+      const res = await listCard(tokenId, p)
       if (!res.success) {
         setStep('error')
         setErrorMsg(res.error)
