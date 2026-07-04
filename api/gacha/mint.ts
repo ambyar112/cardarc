@@ -163,21 +163,45 @@ export default async function handler(req: Request): Promise<Response> {
       );
     }
 
-    // Check if already minted - return existing tokenId if found
-    const existingTokenId = await getExistingMint(wallet, cardId);
-    if (existingTokenId !== null) {
-      console.log('Card already minted, returning existing tokenId:', existingTokenId);
+    // Setup blockchain connection FIRST (need it for queries)
+    const provider = new ethers.JsonRpcProvider(ARC_RPC_URL, {
+      chainId: CHAIN_ID,
+      name: 'arc-testnet',
+    });
+
+    const signer = new ethers.Wallet(DEPLOYER_PRIVATE_KEY!, provider);
+    const contract = new ethers.Contract(CONTRACT_ADDRESS!, ARC_CARDS_ABI, signer);
+
+    // Check if already minted - query BLOCKCHAIN first!
+    let existingTokenId: number | null = null;
+    
+    try {
+      const tid = await contract.cardToTokenId(cardId);
+      const tokenIdNum = Number(tid);
+      if (tokenIdNum > 0) {
+        existingTokenId = tokenIdNum;
+        console.log('Card already minted on blockchain, tokenId:', existingTokenId);
+      }
+    } catch (e) {
+      console.log('Blockchain query error (might not be minted yet):', e);
+    }
+
+    // If found on blockchain, return existing tokenId
+    if (existingTokenId !== null && existingTokenId > 0) {
+      // Also save to DB if missing
+      await saveMintToCollection(wallet, cardId, existingTokenId);
+      
       return new Response(
         JSON.stringify({ 
           success: true, 
           tokenId: existingTokenId,
-          reason: 'Already minted (returned existing tokenId)'
+          reason: 'Already minted (returned existing tokenId from blockchain)'
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Verify user actually pulled this card
+    // Not on blockchain yet - verify user pulled this card
     const hasValidPull = await verifyGachaPull(wallet, cardId);
     if (!hasValidPull) {
       return new Response(
@@ -188,15 +212,6 @@ export default async function handler(req: Request): Promise<Response> {
         { status: 403, headers: { 'Content-Type': 'application/json' } }
       );
     }
-
-    // Setup blockchain connection
-    const provider = new ethers.JsonRpcProvider(ARC_RPC_URL, {
-      chainId: CHAIN_ID,
-      name: 'arc-testnet',
-    });
-
-    const signer = new ethers.Wallet(DEPLOYER_PRIVATE_KEY!, provider);
-    const contract = new ethers.Contract(CONTRACT_ADDRESS!, ARC_CARDS_ABI, signer);
 
     console.log('Minting card:', cardId, 'to:', wallet);
 
