@@ -55,7 +55,7 @@ export async function mintCardNFT(address, card) {
         tokenId = await publicClient.readContract({
           address: ARC_CARDS_ADDRESS,
           abi: ARC_CARDS_ABI,
-          functionName: 'cardIdToTokenId',
+          functionName: 'cardToTokenId',
           args: [cardId],
         })
         tokenId = Number(tokenId)
@@ -119,7 +119,7 @@ export async function mintCardBatchNFT(address, cards) {
           const tid = await publicClient.readContract({
             address: ARC_CARDS_ADDRESS,
             abi: ARC_CARDS_ABI,
-            functionName: 'cardIdToTokenId',
+            functionName: 'cardToTokenId',
             args: [cardId],
           })
           tokenIds.push(Number(tid))
