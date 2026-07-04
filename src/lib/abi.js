@@ -1,6 +1,6 @@
-// ArcCards ERC-1155 + ArcMarketplace
-// ArcCards:       0x8757D77aaCF0EEFcf18e9e834557de53A216e4da
-// ArcMarketplace: 0x7B22FADff81836083DCa60EbE006e518D0011D70
+// ArcCards ERC-1155 + ArcMarketplace (Public Minting - No Approval Required)
+// ArcCards:       0x37D4259aae3F7B79BFc414A98A58ed050Ca3Ed3A
+// ArcMarketplace: 0xD85E15A66C9F2f6a0E4c6C7472a6C0Fe58845438
 // Network: Arc Testnet (Chain ID: 5042002)
 // Deployer: 0x7778b915e86fBf35d9E1cB7fD5d3fD8A6c0bEBFB
 // Block Explorer: https://testnet.arcscan.app

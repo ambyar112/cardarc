@@ -104,7 +104,7 @@ contract ArcCardsOptimized is ERC1155, Ownable, Pausable {
   function mintCard(
     address to,
     string calldata cardId
-  ) external onlyMinter whenActive {
+  ) external whenActive {
     if (bytes(cardId).length == 0) revert InvalidCardId();
 
     uint256 tokenId = _getOrCreateTokenId(cardId);
@@ -122,7 +122,7 @@ contract ArcCardsOptimized is ERC1155, Ownable, Pausable {
   function mintCardBatch(
     address to,
     string[] calldata cardIds
-  ) external onlyMinter whenActive {
+  ) external whenActive {
     uint256 len = cardIds.length;
     if (len == 0 || len > 100) revert InvalidBatchSize();
 
