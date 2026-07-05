@@ -59,21 +59,18 @@ interface MintResponse {
 }
 
 /**
- * Verify user pulled this card via gacha (recent pull within 10 minutes)
+ * Verify user owns this card in their collection (no time limit)
  */
-async function verifyGachaPull(wallet: string, cardId: string): Promise<boolean> {
-  const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  
+async function verifyCardOwnership(wallet: string, cardId: string): Promise<boolean> {
   const { data, error } = await supabaseAdmin
-    .from('gacha_log')
+    .from('collection')
     .select('id')
     .eq('wallet', wallet.toLowerCase())
     .eq('card_id', cardId)
-    .gte('created_at', since)
     .limit(1);
 
   if (error) {
-    console.error('Gacha pull verification error:', error);
+    console.error('Card ownership verification error:', error);
     return false;
   }
 
@@ -201,13 +198,13 @@ export default async function handler(req: Request): Promise<Response> {
       );
     }
 
-    // Not on blockchain yet - verify user pulled this card
-    const hasValidPull = await verifyGachaPull(wallet, cardId);
-    if (!hasValidPull) {
+    // Not on blockchain yet - verify user owns this card
+    const ownsCard = await verifyCardOwnership(wallet, cardId);
+    if (!ownsCard) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          reason: 'No valid gacha pull found. Pull a card first.' 
+          reason: 'Card not found in your collection.' 
         }),
         { status: 403, headers: { 'Content-Type': 'application/json' } }
       );
