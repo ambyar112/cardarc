@@ -127,6 +127,7 @@ export const ARC_MARKETPLACE_ABI = [
   // Write
   { inputs: [
     { name: "tokenId", type: "uint256" },
+    { name: "cardId",  type: "string"  },
     { name: "price",   type: "uint256" },
   ], name: "listCard", outputs: [], stateMutability: "nonpayable", type: "function" },
   { inputs: [{ name: "listingId", type: "uint256" }],
