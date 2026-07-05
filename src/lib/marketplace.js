@@ -102,6 +102,11 @@ export async function listCard(tokenId, cardId, priceEth) {
     const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
     const receipt = await pub.waitForTransactionReceipt({ hash })
 
+    // Check if transaction actually succeeded on-chain
+    if (receipt.status === 'reverted' || receipt.status === 0) {
+      throw new Error('Transaction reverted on-chain')
+    }
+
     // Parse the Listed event to get the real on-chain listingId
     let listingId = null
     try {
