@@ -163,7 +163,7 @@ async function addCardToCollection(
     };
   }
   
-  // Prepare collection data (without nft_token_id - column doesn't exist in current schema)
+  // Prepare collection data with nft_token_id (preserve if already set by mint API)
   const collectionData = {
     wallet: normalizedWallet,
     card_id: sanitizeText(card.id, 100),
@@ -178,7 +178,7 @@ async function addCardToCollection(
     atk: card.atk != null ? Number(card.atk) : null,
     def: card.def != null ? Number(card.def) : null,
     level: card.level != null ? Number(card.level) : null,
-    // nft_token_id: removed - column doesn't exist in production schema
+    nft_token_id: nftTokenId != null ? Number(nftTokenId) : null,
   };
   
   // Upsert with conflict resolution on (wallet, card_id)

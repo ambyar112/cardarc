@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArcCards - Contract Address Checker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+      color: #e5e1e7;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(0, 245, 255, 0.2);
+      border-radius: 16px;
+      padding: 32px;
+      backdrop-filter: blur(20px);
+    }
+    h1 {
+      color: #00f5ff;
+      margin-bottom: 8px;
+      font-size: 28px;
+    }
+    .subtitle {
+      color: #849495;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+    .step {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .step-number {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      background: rgba(0, 245, 255, 0.15);
+      border: 1px solid rgba(0, 245, 255, 0.4);
+      border-radius: 50%;
+      text-align: center;
+      line-height: 28px;
+      color: #00f5ff;
+      font-weight: bold;
+      margin-right: 12px;
+      font-size: 14px;
+    }
+    .step-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #e5e1e7;
+    }
+    .step-content {
+      color: #849495;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .code {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(0, 245, 255, 0.2);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 12px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #00f5ff;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .url {
+      color: #c6bfff;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .url:hover {
+      color: #00f5ff;
+    }
+    .result-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 2px solid rgba(0, 245, 255, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .result-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #00f5ff;
+      margin-bottom: 16px;
+    }
+    .address-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      margin: 8px 0;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .address-label {
+      font-weight: 600;
+      color: #849495;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .address-value {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #e5e1e7;
+      word-break: break-all;
+    }
+    .status-correct {
+      color: #00ff88;
+      font-weight: bold;
+    }
+    .status-wrong {
+      color: #ff6b6b;
+      font-weight: bold;
+    }
+    .alert {
+      padding: 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+    .alert-success {
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      color: #00ff88;
+    }
+    .alert-error {
+      background: rgba(255, 107, 107, 0.1);
+      border: 1px solid rgba(255, 107, 107, 0.3);
+      color: #ff6b6b;
+    }
+    button {
+      background: linear-gradient(135deg, #00f5ff, #c6bfff);
+      color: #050508;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin: 8px 4px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 245, 255, 0.3);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .button-secondary {
+      background: rgba(0, 245, 255, 0.1);
+      color: #00f5ff;
+      border: 1px solid rgba(0, 245, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Contract Address Checker</h1>
+    <p class="subtitle">Verify which contract addresses are loaded on the live site</p>
+
+    <div class="step">
+      <div class="step-title">
+        <span class="step-number">1</span>
+        Open Live Site
+      </div>
+      <div class="step-content">
+        Open <a class="url" href="https://cardarc.vercel.app" target="_blank">cardarc.vercel.app</a> in a new tab
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">
+        <span class="step-number">2</span>
+        Open Browser Console
+      </div>
+      <div class="step-content">
+        Press <strong>F12</strong> (or Right-click → Inspect → Console tab)
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">
+        <span class="step-number">3</span>
+        Paste & Run This Code
+      </div>
+      <div class="step-content">
+        Copy this entire code block and paste it into the console:
+        <div class="code">console.log('=== CONTRACT ADDRESSES CHECK ===');
+console.log('Contract:', import.meta.env.VITE_CONTRACT_ADDRESS);
+console.log('Marketplace:', import.meta.env.VITE_MARKETPLACE_ADDRESS);
+console.log('');
+console.log('EXPECTED:');
+console.log('Contract: 0x37D4259aae3F7B79BFc414A98A58ed050Ca3Ed3A');
+console.log('Marketplace: 0xD85E15A66C9F2f6a0E4c6C7472a6C0Fe58845438');
+console.log('');
+if (import.meta.env.VITE_CONTRACT_ADDRESS === '0x37D4259aae3F7B79BFc414A98A58ed050Ca3Ed3A') {
+  console.log('✅ CONTRACT ADDRESS CORRECT!');
+} else {
+  console.log('❌ CONTRACT ADDRESS WRONG! Need to update Vercel env vars!');
+}
+if (import.meta.env.VITE_MARKETPLACE_ADDRESS === '0xD85E15A66C9F2f6a0E4c6C7472a6C0Fe58845438') {
+  console.log('✅ MARKETPLACE ADDRESS CORRECT!');
+} else {
+  console.log('❌ MARKETPLACE ADDRESS WRONG! Need to update Vercel env vars!');
+}</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">
+        <span class="step-number">4</span>
+        Check Results
+      </div>
+      <div class="step-content">
+        Look at the console output and compare:
+      </div>
+    </div>
+
+    <div class="result-box">
+      <div class="result-title">📋 Expected Addresses (Correct)</div>
+      <div class="address-row">
+        <div class="address-label">Contract Address</div>
+        <div class="address-value">0x37D4259aae3F7B79BFc414A98A58ed050Ca3Ed3A</div>
+      </div>
+      <div class="address-row">
+        <div class="address-label">Marketplace Address</div>
+        <div class="address-value">0xD85E15A66C9F2f6a0E4c6C7472a6C0Fe58845438</div>
+      </div>
+    </div>
+
+    <div class="result-box">
+      <div class="result-title">❌ Old Addresses (Wrong)</div>
+      <div class="address-row">
+        <div class="address-label">Old Contract</div>
+        <div class="address-value">0x87579f4e6E0a0e8AC6E6c5BB70d5Aa0E57814d5F</div>
+      </div>
+      <div class="address-row">
+        <div class="address-label">Old Marketplace</div>
+        <div class="address-value">0x7B223b9a5f0C3c7b06FBD5b06B3E72b2bB8C0cD4</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">
+        <span class="step-number">5</span>
+        Based on Results
+      </div>
+      <div class="step-content">
+        <div class="alert alert-success">
+          <strong>✅ If BOTH addresses are CORRECT:</strong><br>
+          Great! Environment variables are up to date. If you're still having issues, the problem is elsewhere. Clear browser cache (Ctrl+Shift+R) and try again.
+        </div>
+        <div class="alert alert-error">
+          <strong>❌ If ANY address is WRONG:</strong><br>
+          Vercel environment variables need to be updated! Follow the instructions in <strong>FIX_VERCEL_NOW.md</strong> to update env vars and redeploy.
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px; text-align: center;">
+      <button onclick="window.open('https://cardarc.vercel.app', '_blank')">
+        🌐 Open Live Site
+      </button>
+      <button class="button-secondary" onclick="copyCode()">
+        📋 Copy Console Code
+      </button>
+    </div>
+
+    <div style="margin-top: 24px; padding: 16px; background: rgba(248, 189, 69, 0.1); border: 1px solid rgba(248, 189, 69, 0.3); border-radius: 8px; font-size: 13px; color: #f8bd45;">
+      <strong>💡 Quick Tip:</strong> If addresses are wrong, you need to:<br>
+      1. Go to Vercel Dashboard → Project Settings → Environment Variables<br>
+      2. Update VITE_CONTRACT_ADDRESS and VITE_MARKETPLACE_ADDRESS<br>
+      3. Redeploy from Deployments tab<br>
+      4. Hard refresh browser (Ctrl+Shift+R)
+    </div>
+  </div>
+
+  <script>
+    function copyCode() {
+      const code = `console.log('=== CONTRACT ADDRESSES CHECK ===');
+console.log('Contract:', import.meta.env.VITE_CONTRACT_ADDRESS);
+console.log('Marketplace:', import.meta.env.VITE_MARKETPLACE_ADDRESS);
+console.log('');
+console.log('EXPECTED:');
+console.log('Contract: 0x37D4259aae3F7B79BFc414A98A58ed050Ca3Ed3A');
+console.log('Marketplace: 0xD85E15A66C9F2f6a0E4c6C7472a6C0Fe58845438');
+console.log('');
+if (import.meta.env.VITE_CONTRACT_ADDRESS === '0x37D4259aae3F7B79BFc414A98A58ed050Ca3Ed3A') {
+  console.log('✅ CONTRACT ADDRESS CORRECT!');
+} else {
+  console.log('❌ CONTRACT ADDRESS WRONG! Need to update Vercel env vars!');
+}
+if (import.meta.env.VITE_MARKETPLACE_ADDRESS === '0xD85E15A66C9F2f6a0E4c6C7472a6C0Fe58845438') {
+  console.log('✅ MARKETPLACE ADDRESS CORRECT!');
+} else {
+  console.log('❌ MARKETPLACE ADDRESS WRONG! Need to update Vercel env vars!');
+}`;
+      
+      navigator.clipboard.writeText(code).then(() => {
+        alert('✅ Code copied to clipboard! Paste it in the browser console.');
+      }).catch(() => {
+        alert('❌ Failed to copy. Please copy manually from the code block above.');
+      });
+    }
+  </script>
+</body>
+</html>

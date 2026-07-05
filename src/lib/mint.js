@@ -14,7 +14,10 @@ export async function mintCardNFT(address, card) {
 
     console.log('Calling backend mint API for:', cardId)
 
-    // Call backend API - backend will mint using deployer wallet
+    // Call backend API with 30s timeout - backend will mint using deployer wallet
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
+    
     const response = await fetch('/api/gacha/mint', {
       method: 'POST',
       headers: {
@@ -24,7 +27,10 @@ export async function mintCardNFT(address, card) {
         wallet: address,
         cardId: cardId,
       }),
+      signal: controller.signal,
     })
+    
+    clearTimeout(timeoutId)
 
     const data = await response.json()
 
