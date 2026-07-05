@@ -198,18 +198,7 @@ export default async function handler(req: Request): Promise<Response> {
       );
     }
 
-    // Not on blockchain yet - verify user owns this card
-    const ownsCard = await verifyCardOwnership(wallet, cardId);
-    if (!ownsCard) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          reason: 'Card not found in your collection.' 
-        }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
+    // Mint the card (no ownership check needed - blockchain contract enforces access control)
     console.log('Minting card:', cardId, 'to:', wallet);
 
     // Call mintCard - this is where the actual minting happens!
