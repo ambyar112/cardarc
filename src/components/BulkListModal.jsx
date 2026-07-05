@@ -74,9 +74,8 @@ export default function BulkListModal({ cards, walletAddress, onClose, onDone })
         // Check / mint
         let tokenId = await getTokenId(card.id)
         if (!tokenId) {
-          const mintRes = await mintCardNFT(walletAddress, card)
-          if (!mintRes.success) throw new Error('Mint gagal: ' + mintRes.error)
-          tokenId = await getTokenId(card.id)
+          // mintCardNFT returns tokenId directly (or throws error)
+          tokenId = await mintCardNFT(walletAddress, card)
           if (!tokenId) throw new Error('TokenId tidak ditemukan setelah mint')
         }
 
