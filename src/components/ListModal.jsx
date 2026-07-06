@@ -70,17 +70,36 @@ export default function ListModal({ card, walletAddress, onClose, onListed }) {
       }
 
       // PRE-FLIGHT CHECK: Verify on-chain ownership before proceeding
-      const balance = await checkNFTBalance(walletAddress, tokenId)
+      let balance = await checkNFTBalance(walletAddress, tokenId)
       if (balance === 0) {
-        setStep('error')
-        setErrorMsg('NFT tidak ditemukan di blockchain. Hubungi admin untuk bantuan.')
-        console.error('[LISTING_FAILED]', {
+        // NFT not found on-chain - attempt auto-mint recovery
+        console.log('[AUTO_MINT_RECOVERY] NFT not found, attempting mint...', {
           userAddress: walletAddress,
           cardId: card.id,
-          tokenId,
-          reason: 'NFT balance is 0 - user does not own this NFT on-chain'
+          tokenId
         })
-        return
+        
+        setStep('minting')
+        setErrorMsg('') // Clear any previous errors
+        
+        try {
+          // Try to mint the NFT automatically
+          const newTokenId = await mintCardNFT(walletAddress, card)
+          tokenId = newTokenId
+          
+          // Verify mint succeeded
+          balance = await checkNFTBalance(walletAddress, newTokenId)
+          if (balance === 0) {
+            throw new Error('Mint succeeded but NFT still not found')
+          }
+          
+          console.log('[AUTO_MINT_RECOVERY] Success! NFT minted:', newTokenId)
+        } catch (mintError) {
+          console.error('[AUTO_MINT_RECOVERY] Failed:', mintError)
+          setStep('error')
+          setErrorMsg('Gagal mint NFT ke blockchain. Coba lagi atau hubungi admin.')
+          return
+        }
       }
 
       // Approve marketplace if not yet approved
