@@ -211,27 +211,52 @@ export async function updateListingPrice(listingId, newPriceEth) {
 }
 
 // ─── READ: fetch active on-chain listings ────────────────────
+// NOTE: Contract doesn't have getActiveListings() - we loop through individual getListing() calls
 
-export async function fetchOnChainListings(count = 50) {
+export async function fetchOnChainListings(maxCount = 50) {
   try {
     const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
-    // getActiveListings returns (Listing[] result, uint256 total) — destructure correctly
-    const [result] = await pub.readContract({
+    
+    // Get the next listing ID to know how many listings exist
+    const nextId = await pub.readContract({
       address: ARC_MARKETPLACE_ADDRESS,
       abi: ARC_MARKETPLACE_ABI,
-      functionName: 'getActiveListings',
-      args: [1n, BigInt(count)],
+      functionName: 'nextListingId',
     })
-    if (!Array.isArray(result)) return []
-    return result.map(l => ({
-      listingId: Number(l.listingId),
-      seller:    normalizeAddress(l.seller),
-      tokenId:   Number(l.tokenId),
-      cardId:    l.cardId,
-      price:     l.price.toString(),
-      priceEth:  formatEther(l.price),
-      active:    l.active,
-    }))
+    
+    const totalListings = Number(nextId) - 1 // nextListingId is always 1 ahead
+    if (totalListings <= 0) return [] // No listings yet
+    
+    // Determine how many to fetch (cap at maxCount)
+    const fetchCount = Math.min(totalListings, maxCount)
+    
+    // Fetch listings in parallel (more efficient than sequential)
+    const promises = []
+    for (let id = 1; id <= fetchCount; id++) {
+      promises.push(
+        pub.readContract({
+          address: ARC_MARKETPLACE_ADDRESS,
+          abi: ARC_MARKETPLACE_ABI,
+          functionName: 'getListing',
+          args: [BigInt(id)],
+        }).catch(() => null) // Return null for failed fetches
+      )
+    }
+    
+    const results = await Promise.all(promises)
+    
+    // Filter out failed fetches and inactive listings
+    return results
+      .filter(l => l !== null && l.active === true)
+      .map(l => ({
+        listingId: Number(l.listingId),
+        seller:    normalizeAddress(l.seller),
+        tokenId:   Number(l.tokenId),
+        cardId:    l.cardId,
+        price:     l.price.toString(),
+        priceEth:  formatEther(l.price),
+        active:    l.active,
+      }))
   } catch (e) {
     console.error('fetchOnChainListings:', e.message)
     return []
