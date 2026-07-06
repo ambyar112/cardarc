@@ -177,25 +177,38 @@ export default async function handler(req: Request): Promise<Response> {
       const tokenIdNum = Number(tid);
       if (tokenIdNum > 0) {
         existingTokenId = tokenIdNum;
-        console.log('Card already minted on blockchain, tokenId:', existingTokenId);
+        console.log('Card exists on blockchain, tokenId:', existingTokenId);
+        
+        // CRITICAL FIX: Verify ownership for ERC1155!
+        // Same cardId can be minted multiple times to different wallets
+        try {
+          const balance = await contract.balanceOf(wallet, tokenIdNum);
+          const balanceNum = Number(balance);
+          
+          if (balanceNum > 0) {
+            console.log(`Wallet ${wallet} already owns tokenId ${tokenIdNum}`);
+            // Save to DB if missing
+            await saveMintToCollection(wallet, cardId, tokenIdNum);
+            
+            return new Response(
+              JSON.stringify({ 
+                success: true, 
+                tokenId: tokenIdNum,
+                reason: 'Already minted to this wallet (returned existing tokenId)'
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            );
+          } else {
+            console.log(`TokenId ${tokenIdNum} exists but owned by different wallet. Will mint new instance.`);
+            existingTokenId = null; // Force new mint
+          }
+        } catch (balanceError) {
+          console.log('Balance check error, will proceed with new mint:', balanceError);
+          existingTokenId = null;
+        }
       }
     } catch (e) {
       console.log('Blockchain query error (might not be minted yet):', e);
-    }
-
-    // If found on blockchain, return existing tokenId
-    if (existingTokenId !== null && existingTokenId > 0) {
-      // Also save to DB if missing
-      await saveMintToCollection(wallet, cardId, existingTokenId);
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          tokenId: existingTokenId,
-          reason: 'Already minted (returned existing tokenId from blockchain)'
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
     }
 
     // Mint the card (no ownership check needed - blockchain contract enforces access control)
