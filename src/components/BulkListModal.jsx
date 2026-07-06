@@ -77,11 +77,48 @@ export default function BulkListModal({ cards, walletAddress, onClose, onDone })
           // mintCardNFT returns tokenId directly (or throws error)
           tokenId = await mintCardNFT(walletAddress, card)
           if (!tokenId) throw new Error('TokenId tidak ditemukan setelah mint')
+          // Add small delay after mint to ensure blockchain state updated
+          await new Promise(resolve => setTimeout(resolve, 1000))
         }
 
-        // List on-chain
-        const listRes = await listCard(tokenId, card.id, price)
-        if (!listRes.success) throw new Error(listRes.error)
+        // List on-chain with retry logic for gas estimation failures
+        let listRes = null
+        let retries = 0
+        const maxRetries = 2
+        
+        while (!listRes && retries <= maxRetries) {
+          try {
+            listRes = await listCard(tokenId, card.id, price)
+            if (!listRes.success) {
+              // Check if it's a gas estimation error (retriable)
+              const isGasError = listRes.error?.toLowerCase().includes('gas') || 
+                                listRes.error?.toLowerCase().includes('estimate') ||
+                                listRes.error?.toLowerCase().includes('execution reverted')
+              
+              if (isGasError && retries < maxRetries) {
+                console.log(`Gas estimation failed for ${card.name}, retrying... (${retries + 1}/${maxRetries})`)
+                retries++
+                // Wait 2s before retry to let previous tx confirm
+                await new Promise(resolve => setTimeout(resolve, 2000))
+                listRes = null // Reset to retry
+              } else {
+                throw new Error(listRes.error)
+              }
+            }
+          } catch (e) {
+            if (retries < maxRetries) {
+              console.log(`Listing failed for ${card.name}, retrying... (${retries + 1}/${maxRetries})`)
+              retries++
+              await new Promise(resolve => setTimeout(resolve, 2000))
+            } else {
+              throw e
+            }
+          }
+        }
+
+        if (!listRes || !listRes.success) {
+          throw new Error('Failed after retries')
+        }
 
         // Sync Supabase
         await saveListingToSupabase({
@@ -96,8 +133,15 @@ export default function BulkListModal({ cards, walletAddress, onClose, onDone })
         })
 
         res.push({ card, success:true, hash:listRes.hash })
+        
+        // Add small delay between successful listings to prevent nonce conflicts
+        if (i < cards.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1500))
+        }
       } catch (e) {
         res.push({ card, success:false, error:e.message })
+        // Small delay even on error to let network settle
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
     }
 
