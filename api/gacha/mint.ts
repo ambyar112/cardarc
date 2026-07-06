@@ -97,25 +97,25 @@ async function getExistingMint(wallet: string, cardId: string): Promise<number |
 }
 
 /**
- * Save mint to collection table
+ * Update collection table with nft_token_id after mint
+ * Collection entry should already exist from gacha claim
  */
-async function saveMintToCollection(
+async function updateCollectionTokenId(
   wallet: string, 
   cardId: string, 
   tokenId: number
 ): Promise<boolean> {
+  // Update existing collection entry with nft_token_id
   const { error } = await supabaseAdmin
     .from('collection')
-    .insert({
-      wallet: wallet.toLowerCase(),
-      card_id: cardId,
-      nft_token_id: tokenId,
-      quantity: 1,
-      created_at: new Date().toISOString(),
-    });
+    .update({ nft_token_id: tokenId })
+    .eq('wallet', wallet.toLowerCase())
+    .eq('card_id', cardId)
+    .is('nft_token_id', null); // Only update if not already set
 
   if (error) {
-    console.error('Collection save error:', error);
+    console.error('Collection update error:', error);
+    // Don't fail entire mint if DB update fails - NFT is already on blockchain
     return false;
   }
 
@@ -187,8 +187,8 @@ export default async function handler(req: Request): Promise<Response> {
           
           if (balanceNum > 0) {
             console.log(`Wallet ${wallet} already owns tokenId ${tokenIdNum}`);
-            // Save to DB if missing
-            await saveMintToCollection(wallet, cardId, tokenIdNum);
+            // Update DB with tokenId if missing
+            await updateCollectionTokenId(wallet, cardId, tokenIdNum);
             
             return new Response(
               JSON.stringify({ 
@@ -240,10 +240,10 @@ export default async function handler(req: Request): Promise<Response> {
       tokenId = 0; // Fallback
     }
 
-    // Save to collection table
-    const saved = await saveMintToCollection(wallet, cardId, tokenId);
-    if (!saved) {
-      console.error('Failed to save to collection, but mint succeeded');
+    // Update collection table with tokenId (entry should already exist from gacha claim)
+    const updated = await updateCollectionTokenId(wallet, cardId, tokenId);
+    if (!updated) {
+      console.error('Failed to update collection DB, but mint succeeded on blockchain');
     }
 
     // Success!
