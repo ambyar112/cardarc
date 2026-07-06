@@ -37,6 +37,23 @@ export async function getTokenId(cardId) {
   }
 }
 
+// ─── READ: check NFT balance (ownership verification) ────────
+
+export async function checkNFTBalance(walletAddress, tokenId) {
+  try {
+    const pub = getPublicClient(wagmiConfig)
+    const balance = await pub.readContract({
+      address: ARC_CARDS_ADDRESS,
+      abi: ARC_CARDS_ABI,
+      functionName: 'balanceOf',
+      args: [walletAddress, BigInt(tokenId)],
+    })
+    return Number(balance)
+  } catch {
+    return 0
+  }
+}
+
 // ─── READ: check if marketplace is approved ─────────────────
 
 export async function isMarketplaceApproved(walletAddress) {

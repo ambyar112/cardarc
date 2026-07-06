@@ -4,7 +4,7 @@
 //               Wallet address normalized to lowercase before DB writes.
 import { useState } from 'react'
 import { saveListingToSupabase } from '../lib/supabase'
-import { getTokenId, isMarketplaceApproved, approveMarketplace, listCard } from '../lib/marketplace'
+import { getTokenId, isMarketplaceApproved, approveMarketplace, listCard, checkNFTBalance } from '../lib/marketplace'
 import { mintCardNFT } from '../lib/mint'
 
 const TIER_COLORS = { legendary: '#f5c84c', epic: '#a78bfa', rare: '#16e6ff', common: '#9aa3b2' }
@@ -67,6 +67,20 @@ export default function ListModal({ card, walletAddress, onClose, onListed }) {
             return
           }
         }
+      }
+
+      // PRE-FLIGHT CHECK: Verify on-chain ownership before proceeding
+      const balance = await checkNFTBalance(walletAddress, tokenId)
+      if (balance === 0) {
+        setStep('error')
+        setErrorMsg('NFT tidak ditemukan di blockchain. Hubungi admin untuk bantuan.')
+        console.error('[LISTING_FAILED]', {
+          userAddress: walletAddress,
+          cardId: card.id,
+          tokenId,
+          reason: 'NFT balance is 0 - user does not own this NFT on-chain'
+        })
+        return
       }
 
       // Approve marketplace if not yet approved
