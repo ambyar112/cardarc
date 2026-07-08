@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useWalletClient } from 'wagmi'
+import { api } from '../lib/apiClient'
 import CardItem from '../components/CardItem'
 import { SummonOverlay, SummonOverlay10 } from '../components/SummonOverlay'
 import { fetchSetCards, tierBadge } from '../lib/tcgdex'
@@ -328,6 +329,7 @@ function PackInfoModal({ packInfo, pools, onClose, onSelect }) {
 
 export default function Gacha() {
   const { address, isConnected } = useAccount()
+  const { data: walletClient } = useWalletClient()
   const [selectedPack, setSelectedPack] = useState(PACKS[0])
   const [pools, setPools]       = useState({})
   const [loading, setLoading]   = useState(false)
@@ -446,8 +448,15 @@ export default function Gacha() {
             console.warn('Mint failed, saving collection without tokenId:', e.message)
           }
 
-          // Save to collection with real tokenId
-          addToCollection(address, card, nftTokenId).catch(e => console.warn('addToCollection failed:', e.message))
+          // Save to collection with authenticated API (prevents wallet impersonation)
+          if (walletClient) {
+            try {
+              await api.addToCollection(walletClient, [{ ...card, nftTokenId }])
+              console.log('✅ Collection saved via authenticated API')
+            } catch (e) {
+              console.warn('Authenticated addToCollection failed:', e.message)
+            }
+          }
         }
       } else {
         const cards = Array.from({ length: 10 }, () => pool[Math.floor(Math.random() * pool.length)])
@@ -472,11 +481,19 @@ export default function Gacha() {
             console.warn('Batch mint failed, saving collections without tokenIds:', e.message)
           }
 
-          // Save to collection with real tokenIds (match cards[i] → tokenIds[i])
-          cards.forEach((card, i) => {
-            const nftTokenId = tokenIds[i] || null
-            addToCollection(address, card, nftTokenId).catch(e => console.warn('addToCollection failed:', e.message))
-          })
+          // Save to collection with authenticated API (batch prevents wallet impersonation)
+          if (walletClient) {
+            try {
+              const cardsWithTokens = cards.map((card, i) => ({
+                ...card,
+                nftTokenId: tokenIds[i] || null
+              }))
+              await api.addToCollection(walletClient, cardsWithTokens)
+              console.log('✅ Batch collection saved via authenticated API')
+            } catch (e) {
+              console.warn('Authenticated batch addToCollection failed:', e.message)
+            }
+          }
         }
       }
     } catch (e) {
