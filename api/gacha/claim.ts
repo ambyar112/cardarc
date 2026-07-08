@@ -23,6 +23,7 @@
 
 // Edge runtime: use Web Crypto API (no Node 'crypto' module)
 import { createClient } from '@supabase/supabase-js';
+import { withAuth } from '../_middleware/auth';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -163,28 +164,15 @@ function isValidAddress(address: string): boolean {
 }
 
 /**
- * Main claim handler.
+ * Main claim handler - wrapped with auth middleware
+ * Wallet signature is verified before reaching this handler
  */
-export default async function handler(req: Request): Promise<Response> {
-  // Only accept POST
-  if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ success: false, reason: 'Method not allowed' }),
-      { status: 405, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
-
+const handler = async (wallet: string, body: any): Promise<Response> => {
   try {
-    const body: ClaimRequest = await req.json();
-    const { wallet, cardId, nonce } = body;
+    const { cardId, nonce } = body;
 
-    // Validate input
-    if (!wallet || !isValidAddress(wallet)) {
-      return new Response(
-        JSON.stringify({ success: false, reason: 'Invalid wallet address' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    // Wallet is already verified and lowercase from auth middleware
+    // No need to validate wallet format - auth middleware did it
 
     if (!cardId || typeof cardId !== 'string' || cardId.length > 100) {
       return new Response(
@@ -248,6 +236,9 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 }
+
+// Export handler wrapped with authentication middleware
+export default withAuth(handler)
 
 export const config = {
   runtime: 'edge',

@@ -20,12 +20,39 @@ const sampleListings = [
 ]
 
 export default async function handler(req, res) {
-  const authHeader = req.headers.authorization
-  const expectedToken = 'arccc-seed-2026'
+  // Get API key from environment (must be set in Vercel)
+  const expectedToken = process.env.SEED_API_KEY
   
-  if (authHeader !== `Bearer ${expectedToken}`) {
+  if (!expectedToken) {
+    console.error('SEED_API_KEY not configured')
+    return res.status(500).json({ error: 'Server configuration error' })
+  }
+  
+  const authHeader = req.headers.authorization
+  const providedToken = authHeader?.replace('Bearer ', '') || ''
+  
+  // Constant-time comparison to prevent timing attacks
+  if (providedToken.length !== expectedToken.length) {
+    console.warn('Seed endpoint unauthorized attempt - invalid token length')
     return res.status(401).json({ error: 'Unauthorized' })
   }
+  
+  // Use crypto.timingSafeEqual for constant-time comparison
+  const expectedBuffer = Buffer.from(expectedToken, 'utf8')
+  const providedBuffer = Buffer.from(providedToken, 'utf8')
+  
+  try {
+    const crypto = await import('crypto')
+    if (!crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
+      console.warn('Seed endpoint unauthorized attempt - invalid token')
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+  } catch (err) {
+    console.warn('Seed endpoint unauthorized attempt - comparison failed')
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+  
+  console.log('Seed endpoint accessed successfully')
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false }
