@@ -40,13 +40,15 @@ export default function Profile() {
 
   useEffect(() => {
     if (!isConnected || !address) { setLoading(false); return }
+    let isMounted = true
     async function load() {
-      setLoading(true)
+      if (isMounted) setLoading(true)
       const [collection, pullLog, board] = await Promise.all([
         getCollection(address),
         getGachaLog(address, 10),
         getRealLeaderboard(),
       ])
+      if (!isMounted) return
       const profile = board.find(p => p.wallet?.toLowerCase() === address.toLowerCase())
       setUsername(profile?.username || '')
       setCards(collection.map(c => ({
@@ -71,6 +73,7 @@ export default function Profile() {
       setLoading(false)
     }
     load()
+    return () => { isMounted = false }
   }, [isConnected, address])
 
   async function saveUsername() {

@@ -386,12 +386,26 @@ export default function Marketplace() {
     }
   }, [])
 
-  useEffect(() => { loadListings() }, [loadListings])
+  useEffect(() => {
+    let isMounted = true
+    loadListings().finally(() => {
+      // Only update state if component still mounted
+      if (!isMounted) console.log('[Marketplace] Skipped setState after unmount')
+    })
+    return () => { isMounted = false }
+  }, [loadListings])
 
   useEffect(() => {
     if (tab !== 'history') return
+    let isMounted = true
     setTradeLoading(true)
-    getMarketplaceHistory(50).then(d => { setTrades(d); setTradeLoading(false) })
+    getMarketplaceHistory(50).then(d => {
+      if (isMounted) {
+        setTrades(d)
+        setTradeLoading(false)
+      }
+    })
+    return () => { isMounted = false }
   }, [tab])
 
   useEffect(() => {

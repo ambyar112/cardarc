@@ -295,16 +295,31 @@ export const transactionCache = new CacheManager({
 });
 
 // ────────────────────────────────────────────────────────────────────────
-// PERIODIC CLEANUP
+// PERIODIC CLEANUP (with proper memory leak prevention)
 // ────────────────────────────────────────────────────────────────────────
+
+// Store interval reference at module level for cleanup
+let cleanupInterval: NodeJS.Timeout | null = null;
 
 // Run cleanup every 5 minutes
 if (typeof window !== 'undefined') {
-  setInterval(() => {
+  cleanupInterval = setInterval(() => {
     balanceCache.cleanupExpired();
     nftMetadataCache.cleanupExpired();
     marketplaceCache.cleanupExpired();
     profileCache.cleanupExpired();
     transactionCache.cleanupExpired();
   }, 5 * 60 * 1000);
+}
+
+/**
+ * Stop periodic cleanup interval
+ * Call this to prevent memory leaks when cache manager is no longer needed
+ */
+export function stopPeriodicCleanup(): void {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+    console.log('[CacheManager] Periodic cleanup stopped');
+  }
 }
