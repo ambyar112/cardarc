@@ -28,6 +28,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 // ────────────────────────────────────────────────────────────────────────
 
 error ZeroPrice();
+error PriceExceedsMaximum();
 error InvalidCardId();
 error NotOwned();
 error AlreadyListed();
@@ -53,6 +54,7 @@ interface IArcCards is IERC1155 {
 contract ArcMarketplaceOptimized is ERC1155Holder, Ownable, ReentrancyGuard {
   IArcCards public immutable arcCards;
   
+  uint256 public constant MAX_PRICE = 1000 ether; // Maximum listing price (DoS protection)
   uint256 public feeBps = 250; // 2.5% (250 basis points)
   address public feeRecipient;
 
@@ -106,6 +108,7 @@ contract ArcMarketplaceOptimized is ERC1155Holder, Ownable, ReentrancyGuard {
     uint256 price
   ) external nonReentrant {
     if (price == 0) revert ZeroPrice();
+    if (price > MAX_PRICE) revert PriceExceedsMaximum();
     if (arcCards.balanceOf(msg.sender, tokenId) < 1) revert NotOwned();
     if (sellerTokenListing[msg.sender][tokenId] != 0) revert AlreadyListed();
     if (bytes(cardId).length == 0) revert InvalidCardId();
@@ -200,6 +203,7 @@ contract ArcMarketplaceOptimized is ERC1155Holder, Ownable, ReentrancyGuard {
 
   function updatePrice(uint256 listingId, uint256 newPrice) external {
     if (newPrice == 0) revert ZeroPrice();
+    if (newPrice > MAX_PRICE) revert PriceExceedsMaximum();
     
     Listing storage l = listings[listingId];
     if (!l.active) revert InactiveListing();
