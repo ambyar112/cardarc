@@ -86,7 +86,7 @@ export async function approveMarketplace() {
       chainId: ARC_TESTNET_CHAIN_ID,
     })
     const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
-    await pub.waitForTransactionReceipt({ hash })
+    await pub.waitForTransactionReceipt({ hash, timeout: 60_000 })
     return { success: true, hash }
   } catch (e) {
     console.error('approveMarketplace:', e)
@@ -118,7 +118,7 @@ export async function listCard(tokenId, cardId, priceEth) {
       chainId: ARC_TESTNET_CHAIN_ID,
     })
     const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
-    const receipt = await pub.waitForTransactionReceipt({ hash })
+    const receipt = await pub.waitForTransactionReceipt({ hash, timeout: 60_000 })
 
     // Check if transaction actually succeeded on-chain
     if (receipt.status === 'reverted' || receipt.status === 0) {
@@ -172,7 +172,7 @@ export async function purchaseListing(listingId, priceWei) {
       chainId: ARC_TESTNET_CHAIN_ID,
     })
     const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
-    await pub.waitForTransactionReceipt({ hash })
+    await pub.waitForTransactionReceipt({ hash, timeout: 60_000 })
     return { success: true, hash }
   } catch (e) {
     console.error('purchaseListing:', e)
@@ -195,7 +195,7 @@ export async function cancelListing(listingId) {
       chainId: ARC_TESTNET_CHAIN_ID,
     })
     const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
-    await pub.waitForTransactionReceipt({ hash })
+    await pub.waitForTransactionReceipt({ hash, timeout: 60_000 })
     return { success: true, hash }
   } catch (e) {
     console.error('cancelListing:', e)
@@ -218,7 +218,7 @@ export async function updateListingPrice(listingId, newPriceEth) {
       chainId: ARC_TESTNET_CHAIN_ID,
     })
     const pub = getPublicClient(wagmiConfig, { chainId: ARC_TESTNET_CHAIN_ID })
-    await pub.waitForTransactionReceipt({ hash })
+    await pub.waitForTransactionReceipt({ hash, timeout: 60_000 })
     return { success: true, hash }
   } catch (e) {
     return { success: false, error: e.shortMessage || e.message }
