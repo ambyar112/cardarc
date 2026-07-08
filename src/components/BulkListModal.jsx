@@ -71,14 +71,15 @@ export default function BulkListModal({ cards, walletAddress, onClose, onDone })
       setProgress({ current: i + 1, total: cards.length, cardName: card.name })
 
       try {
-        // Check / mint
+        // ✨ ENHANCED VALIDATION: Check card existence on-chain FIRST
         let tokenId = await getTokenId(card.id)
-        if (!tokenId) {
-          // mintCardNFT returns tokenId directly (or throws error)
-          tokenId = await mintCardNFT(walletAddress, card)
-          if (!tokenId) throw new Error('TokenId tidak ditemukan setelah mint')
-          // Add small delay after mint to ensure blockchain state updated
-          await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // CRITICAL: Validate tokenId before proceeding
+        if (!tokenId || tokenId.toString() === '0') {
+          throw new Error(
+            `Card "${card.name}" belum di-mint on-chain atau contract addresses salah. ` +
+            `TokenId: ${tokenId || 'null'}. Pastikan card sudah di-mint sebelum bulk listing.`
+          )
         }
 
         // List on-chain with retry logic for gas estimation failures

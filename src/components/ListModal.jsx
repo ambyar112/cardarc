@@ -34,39 +34,49 @@ export default function ListModal({ card, walletAddress, onClose, onListed }) {
     const p = parseFloat(price)
 
     try {
-      // Use real tokenId from collection (set during gacha mint)
-      // If missing from DB, query blockchain first before attempting mint
+      // ✨ ENHANCED VALIDATION: Check card existence on-chain FIRST
+      setStep('minting')
       let tokenId = card.nft_token_id
 
+      // CRITICAL: Validate on-chain before proceeding
       if (!tokenId && tokenId !== 0) {
-        // Check if card already minted on-chain (query cardToTokenId)
-        setStep('minting')
+        // Query blockchain for existing tokenId
         try {
+          console.log('[VALIDATION] Checking if card exists on-chain:', card.id)
           tokenId = await getTokenId(card.id)
-        } catch (e) {
-          console.log('Card not yet on blockchain, will attempt mint')
-        }
-
-        // If still no tokenId, mint now (this will only work if card not already minted)
-        if (!tokenId && tokenId !== 0) {
-          try {
-            tokenId = await mintCardNFT(walletAddress, card)
-          } catch (mintError) {
-            // If mint fails because already minted, query blockchain again
-            if (mintError.message?.includes('already minted')) {
-              console.log('Card already minted, querying tokenId from blockchain...')
-              tokenId = await getTokenId(card.id)
-            } else {
-              throw mintError
-            }
-          }
           
-          if (!tokenId && tokenId !== 0) {
+          if (!tokenId || tokenId.toString() === '0') {
+            // Card NOT minted yet - show clear error
             setStep('error')
-            setErrorMsg('Gagal mint kartu ke blockchain')
+            setErrorMsg(
+              `Card "${card.name}" belum di-mint on-chain. ` +
+              `Pastikan contract addresses benar dan card sudah di-mint sebelum listing.`
+            )
             return
           }
+          
+          console.log('[VALIDATION] Card found on-chain, tokenId:', tokenId)
+        } catch (e) {
+          console.error('[VALIDATION] Error checking card on-chain:', e)
+          setStep('error')
+          setErrorMsg(
+            'Gagal memeriksa kartu di blockchain. ' +
+            'Pastikan contract addresses benar di environment variables. ' +
+            'Error: ' + (e.message || 'Unknown')
+          )
+          return
         }
+
+      }
+
+      // If tokenId still invalid after validation, abort
+      if (!tokenId || tokenId.toString() === '0') {
+        setStep('error')
+        setErrorMsg(
+          `Kartu tidak valid untuk listing. TokenId: ${tokenId}. ` +
+          `Hubungi admin untuk memastikan kartu sudah di-mint dengan benar.`
+        )
+        return
       }
 
       // PRE-FLIGHT CHECK: Verify on-chain ownership before proceeding
@@ -94,6 +104,11 @@ export default function ListModal({ card, walletAddress, onClose, onListed }) {
           }
           
           console.log('[AUTO_MINT_RECOVERY] Success! NFT minted:', newTokenId)
+          
+          // CRITICAL: Wait for state propagation before proceeding
+          // Blockchain needs time to propagate mint state to marketplace contract
+          console.log('[AUTO_MINT_RECOVERY] Waiting 3s for state propagation...')
+          await new Promise(resolve => setTimeout(resolve, 3000))
         } catch (mintError) {
           console.error('[AUTO_MINT_RECOVERY] Failed:', mintError)
           setStep('error')
@@ -112,6 +127,10 @@ export default function ListModal({ card, walletAddress, onClose, onListed }) {
           setErrorMsg('Gagal approve marketplace: ' + res.error)
           return
         }
+        
+        // CRITICAL: Wait for approval state propagation
+        console.log('[APPROVAL] Waiting 2s for state propagation...')
+        await new Promise(resolve => setTimeout(resolve, 2000))
       }
 
       // 3. List on-chain
