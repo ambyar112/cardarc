@@ -402,6 +402,8 @@ export default function Gacha() {
 
   async function summon(qty) {
     if (summoning) return
+    setSummoning(true) // Race condition fix: immediate lock after guard check
+
     let pool = pools[selectedPack.id] || []
 
     // Pool belum load — trigger load dan tunggu sebentar
@@ -423,10 +425,12 @@ export default function Gacha() {
         console.error('Pool load failed:', e)
       }
       setLoadingPacks(prev => ({ ...prev, [selectedPack.id]: false }))
-      if (!pool.length) return // masih kosong, tidak bisa summon
+      if (!pool.length) {
+        setSummoning(false) // Reset lock on early return
+        return // masih kosong, tidak bisa summon
+      }
     }
 
-    setSummoning(true)
     try {
       if (qty === 1) {
         const card = pool[Math.floor(Math.random() * pool.length)]
