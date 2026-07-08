@@ -5,6 +5,7 @@ import { writeContract, getPublicClient, getAccount } from '@wagmi/core'
 import { wagmiConfig } from './wagmi'
 import { ARC_CARDS_ADDRESS, ARC_CARDS_ABI, ARC_MARKETPLACE_ADDRESS, ARC_MARKETPLACE_ABI } from './abi'
 import { parseEther, formatEther } from 'viem'
+import { extractTransactionError } from './errorExtractor'
 
 const ARC_TESTNET_CHAIN_ID = 5042002
 
@@ -88,8 +89,8 @@ export async function approveMarketplace() {
     await pub.waitForTransactionReceipt({ hash })
     return { success: true, hash }
   } catch (e) {
-    console.error('approveMarketplace:', e.message)
-    return { success: false, error: e.shortMessage || e.message }
+    console.error('approveMarketplace:', e)
+    return { success: false, error: extractTransactionError(e) }
   }
 }
 
@@ -136,8 +137,8 @@ export async function listCard(tokenId, cardId, priceEth) {
 
     return { success: true, hash, listingId }
   } catch (e) {
-    console.error('listCard:', e.message)
-    return { success: false, error: e.shortMessage || e.message }
+    console.error('listCard:', e)
+    return { success: false, error: extractTransactionError(e) }
   }
 }
 
@@ -160,8 +161,8 @@ export async function purchaseListing(listingId, priceWei) {
     await pub.waitForTransactionReceipt({ hash })
     return { success: true, hash }
   } catch (e) {
-    console.error('purchaseListing:', e.message)
-    return { success: false, error: e.shortMessage || e.message }
+    console.error('purchaseListing:', e)
+    return { success: false, error: extractTransactionError(e) }
   }
 }
 
@@ -183,8 +184,8 @@ export async function cancelListing(listingId) {
     await pub.waitForTransactionReceipt({ hash })
     return { success: true, hash }
   } catch (e) {
-    console.error('cancelListing:', e.message)
-    return { success: false, error: e.shortMessage || e.message }
+    console.error('cancelListing:', e)
+    return { success: false, error: extractTransactionError(e) }
   }
 }
 

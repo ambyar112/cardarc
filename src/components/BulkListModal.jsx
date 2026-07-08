@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { saveListingToSupabase } from '../lib/supabase'
 import { getTokenId, isMarketplaceApproved, approveMarketplace, listCard } from '../lib/marketplace'
 import { mintCardNFT } from '../lib/mint'
+import { extractTransactionError } from '../lib/errorExtractor'
 
 const TIER_COLORS = { legendary:'#f5c84c', epic:'#a78bfa', rare:'#16e6ff', common:'#9aa3b2' }
 const TIERS = ['legendary','epic','rare','common']
@@ -374,10 +375,10 @@ export default function BulkListModal({ cards, walletAddress, onClose, onDone })
                     <span className="font-mono text-[10px] flex-1 truncate" style={{ color: r.success ? '#9aa3b2' : '#ff6b6b' }}>
                       {shortName(r.card.name)}
                     </span>
-                    {r.success
-                      ? <span className="font-mono text-[9px]" style={{ color:'#4ade80' }}>Listed</span>
-                      : <span className="font-mono text-[9px] truncate max-w-[120px]" style={{ color:'#ff6b6b' }}>{r.error}</span>
-                    }
+                     {r.success
+                       ? <span className="font-mono text-[9px]" style={{ color:'#4ade80' }}>Listed</span>
+                       : <span className="font-mono text-[9px] truncate max-w-[180px]" style={{ color:'#ff6b6b' }} title={r.error}>{r.error}</span>
+                     }
                   </div>
                 ))}
               </div>
