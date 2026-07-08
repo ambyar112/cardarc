@@ -1,5 +1,5 @@
 /**
- * API Client with EIP-191 Signature Authentication
+ * API Client with Wallet Signature Authentication
  * 
  * Handles cryptographic signing of API requests to prevent:
  * - Wallet impersonation
@@ -9,11 +9,10 @@
  * @module apiClient
  */
 
-import { createWalletClient, custom, type WalletClient } from 'viem';
-import { arcTestnet } from './wagmi';
+import { type WalletClient } from 'viem';
 
 /**
- * Generate EIP-191 personal signature for message
+ * Generate wallet signature for authentication
  * 
  * @param walletClient - Viem wallet client (from useWalletClient hook)
  * @param message - Message to sign
@@ -43,55 +42,48 @@ async function signMessage(
 /**
  * Create authenticated request payload with signature
  * 
- * Backend expects:
- * - X-Wallet-Address header
- * - X-Signature header  
- * - X-Timestamp header
- * - Request body (will be verified against signature)
+ * Backend expects IN BODY (NOT headers):
+ * - wallet: wallet address
+ * - signature: EIP-191 signature
+ * - message: signed message (format: "Arc Cards Authentication\nWallet: {wallet}\nTimestamp: {timestamp}")
+ * - timestamp: unix timestamp in milliseconds
+ * - ...other request fields (cardId, packType, etc.)
  * 
  * @param walletClient - Viem wallet client
- * @param endpoint - API endpoint path (e.g., '/api/gacha/claim')
- * @param body - Request body object
- * @returns Signed request headers and body
+ * @param body - Request body object (will be augmented with auth fields)
+ * @returns Body with authentication fields added
  */
 async function createAuthenticatedRequest(
   walletClient: WalletClient,
-  endpoint: string,
   body: Record<string, any>
-): Promise<{
-  headers: Record<string, string>;
-  body: Record<string, any>;
-}> {
+): Promise<Record<string, any>> {
   if (!walletClient.account) {
     throw new Error('Wallet not connected');
   }
 
-  const walletAddress = walletClient.account.address;
-  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const wallet = walletClient.account.address.toLowerCase();
+  const timestamp = Date.now(); // milliseconds, not seconds!
 
-  // Create deterministic message to sign
-  // Format: endpoint|timestamp|JSON(body)
-  const bodyJson = JSON.stringify(body);
-  const messageToSign = `${endpoint}|${timestamp}|${bodyJson}`;
+  // Create message matching backend expectations
+  // MUST match format in api/_middleware/auth.ts line 41
+  const message = `Arc Cards Authentication\nWallet: ${wallet}\nTimestamp: ${timestamp}`;
 
-  console.log('[apiClient] Signing request:', {
-    endpoint,
-    walletAddress,
+  console.log('[apiClient] Creating authentication:', {
+    wallet,
     timestamp,
-    bodyLength: bodyJson.length
+    messageLength: message.length
   });
 
   // Generate signature
-  const signature = await signMessage(walletClient, messageToSign);
+  const signature = await signMessage(walletClient, message);
 
+  // Return body with auth fields added
   return {
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Wallet-Address': walletAddress,
-      'X-Signature': signature,
-      'X-Timestamp': timestamp,
-    },
-    body,
+    ...body,
+    wallet,
+    signature,
+    message,
+    timestamp,
   };
 }
 
@@ -100,13 +92,13 @@ async function createAuthenticatedRequest(
  * 
  * @param walletClient - Viem wallet client (from useWalletClient)
  * @param endpoint - API endpoint path
- * @param body - Request body
+ * @param body - Request body (auth fields will be added automatically)
  * @returns API response data
  */
 export async function callAuthenticatedAPI<T = any>(
   walletClient: WalletClient | undefined,
   endpoint: string,
-  body: Record<string, any>
+  body: Record<string, any> = {}
 ): Promise<T> {
   if (!walletClient) {
     throw new Error('Wallet client not initialized. Please connect your wallet.');
@@ -117,10 +109,9 @@ export async function callAuthenticatedAPI<T = any>(
   }
 
   try {
-    // Create signed request
-    const { headers, body: requestBody } = await createAuthenticatedRequest(
+    // Create signed request (auth fields added to body)
+    const authenticatedBody = await createAuthenticatedRequest(
       walletClient,
-      endpoint,
       body
     );
 
@@ -129,8 +120,10 @@ export async function callAuthenticatedAPI<T = any>(
     // Make API call
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers,
-      body: JSON.stringify(requestBody),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(authenticatedBody),
     });
 
     const data = await response.json();
@@ -157,7 +150,7 @@ export async function callAuthenticatedAPI<T = any>(
     });
     
     // Re-throw with user-friendly message
-    if (error.message.includes('User rejected')) {
+    if (error.message.includes('User rejected') || error.message.includes('user rejected')) {
       throw new Error('Signature rejected. Please approve the signature request.');
     }
     
