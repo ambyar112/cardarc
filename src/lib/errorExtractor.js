@@ -51,9 +51,10 @@ export function extractTransactionError(error) {
   if (
     combinedError.includes('already listed') ||
     combinedError.includes('listing exists') ||
-    combinedError.includes('duplicate listing')
+    combinedError.includes('duplicate listing') ||
+    combinedError.includes('card sudah di-list')
   ) {
-    return 'Card sudah di-list sebelumnya. Tidak bisa list card yang sama dua kali.'
+    return 'Card sudah di-list di marketplace. Cek halaman Profile untuk cancel listing yang lama.'
   }
 
   // 5. Wrong contract address / Contract not found

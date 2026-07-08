@@ -122,7 +122,21 @@ export async function listCard(tokenId, cardId, priceEth) {
 
     // Check if transaction actually succeeded on-chain
     if (receipt.status === 'reverted' || receipt.status === 0) {
-      throw new Error('Transaction reverted on-chain')
+      // Try to get more specific error info by simulating the call
+      try {
+        await pub.simulateContract({
+          address: ARC_MARKETPLACE_ADDRESS,
+          abi: ARC_MARKETPLACE_ABI,
+          functionName: 'listCard',
+          args: [BigInt(tokenId), cardId, priceWei],
+          account: account.address,
+        })
+      } catch (simError) {
+        // If simulation also fails, we get the actual revert reason
+        throw simError
+      }
+      // If simulation succeeds but tx reverted, throw generic error
+      throw new Error('Transaction reverted on-chain. Kemungkinan card sudah di-list atau tidak ada ownership.')
     }
 
     // Parse the Listed event to get the real on-chain listingId
