@@ -23,7 +23,7 @@
 
 // Edge runtime: use Web Crypto API (no Node 'crypto' module)
 import { createClient } from '@supabase/supabase-js';
-import { withAuth } from '../_middleware/auth';
+import { withAuth } from '../_middleware/auth.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
