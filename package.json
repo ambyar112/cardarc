@@ -1,7 +1,6 @@
 {
-  "name": "arccc",
+  "name": "cardarc",
   "private": true,
-  // lastRedeploy: 1
   "version": "0.0.0",
   "type": "module",
   "engines": {
