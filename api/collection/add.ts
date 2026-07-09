@@ -55,35 +55,61 @@ async function addCardToCollection(wallet, card, nftTokenId) {
   return { success: true }
 }
 
-async function handler(req: Request): Promise<Response> {
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } })
+export default withAuth(
+  async (wallet: string, body: any): Promise<Response> => {
+    try {
+      const cardsArray = normalizeCard(body)
+      const { nftTokenId } = (body || {}) as any
+
+      if (!cardsArray || !cardsArray.length) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Invalid card data. Required: card object or cards[]',
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      }
+
+      let last: any = { success: true }
+      for (const c of cardsArray) {
+        last = await addCardToCollection(wallet, c, nftTokenId)
+        if (!last.success) break
+      }
+
+      if (!last.success) {
+        return new Response(
+          JSON.stringify({ success: false, error: last.error }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Cards added to collection successfully',
+          count: cardsArray.length,
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    } catch (err: any) {
+      console.error('Add to collection handler error:', err)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Internal server error' }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    }
   }
-
-  try {
-    const body = await req.json().catch(() => ({}))
-    const cardsArray = normalizeCard(body)
-    const { nftTokenId } = body || {}
-
-    if (!cardsArray || !cardsArray.length) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid card data. Required: card object or cards[]' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
-    }
-
-    let last: any = { success: true }
-    for (const c of cardsArray) {
-      last = await addCardToCollection((req as any).wallet, c, nftTokenId)
-      if (!last.success) break
-    }
-
-    if (!last.success) {
-      return new Response(JSON.stringify({ success: false, error: last.error }), { status: 500, headers: { 'Content-Type': 'application/json' } })
-    }
-
-    return new Response(JSON.stringify({ success: true, message: 'Cards added to collection successfully', count: cardsArray.length }), { status: 200, headers: { 'Content-Type': 'application/json' } })
-  } catch (err: any) {
-    console.error('Add to collection handler error:', err)
-    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
-  }
-}
-
-export default withAuth(handler)
+)
