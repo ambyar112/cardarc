@@ -30,16 +30,20 @@ const CONTRACT_ADDRESS = process.env.VITE_CONTRACT_ADDRESS || process.env.ARC_CA
 const ARC_RPC_URL = process.env.ARC_RPC_URL || 'https://rpc.testnet.arc.network';
 const CHAIN_ID = parseInt(process.env.CHAIN_ID || '5042002');
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  throw new Error('Supabase configuration required');
+// Lazy config — never throw at module load (avoids FUNCTION_INVOCATION_FAILED)
+function getMintConfig() {
+  const missing: string[] = [];
+  if (!SUPABASE_URL) missing.push('SUPABASE_URL');
+  if (!SUPABASE_SERVICE_KEY) missing.push('SUPABASE_SERVICE_KEY|SUPABASE_SERVICE_ROLE_KEY');
+  if (!DEPLOYER_PRIVATE_KEY) missing.push('DEPLOYER_PRIVATE_KEY|SIGNER_PRIVATE_KEY');
+  if (!CONTRACT_ADDRESS) missing.push('VITE_CONTRACT_ADDRESS|ARC_CARDS_ADDRESS');
+  return { ok: missing.length === 0, missing };
 }
 
-if (!DEPLOYER_PRIVATE_KEY || !CONTRACT_ADDRESS) {
-  throw new Error('Contract configuration required');
-}
-
-// Admin Supabase client
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+// Admin Supabase client (may be unconfigured until env is set)
+const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+  : null as any;
 
 // ArcCards ABI (minimal - just what we need)
 const ARC_CARDS_ABI = [
@@ -136,6 +140,14 @@ function isValidAddress(address: string): boolean {
  */
 const handler = async (wallet: string, body: any): Promise<Response> => {
   try {
+    const cfg = getMintConfig();
+    if (!cfg.ok || !supabaseAdmin) {
+      return new Response(
+        JSON.stringify({ success: false, reason: 'Mint endpoint misconfigured', missing: cfg.missing }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { cardId } = body;
 
     // Wallet is already verified and lowercase from auth middleware
