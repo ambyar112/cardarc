@@ -43,7 +43,8 @@ export async function mintCardNFT(address, card, walletClient) {
 }
 
 /**
- * Batch mint — sequential authenticated mint calls
+ * Batch mint — ONE signature + ONE backend call
+ * Backend will mint sequentially with deployer wallet.
  * @param {string} address
  * @param {Array<{id: string}>} cards
  * @param {import('viem').WalletClient} walletClient
@@ -55,17 +56,35 @@ export async function mintCardBatchNFT(address, cards, walletClient) {
       throw new Error('Wallet client required for signed mint. Connect wallet and try again.')
     }
 
-    console.log('Batch minting', cards.length, 'cards via authenticated backend API')
+    const cardIds = (cards || [])
+      .map((c) => c.id || c.cardId)
+      .filter(Boolean)
 
-    const tokenIds = []
-    for (const card of cards) {
-      try {
-        const tokenId = await mintCardNFT(address, card, walletClient)
-        tokenIds.push(tokenId)
-      } catch (e) {
-        console.error('Failed to mint card:', card?.id, e.message)
-        tokenIds.push(null)
+    if (!cardIds.length) {
+      return []
+    }
+
+    console.log('Batch minting', cardIds.length, 'cards via single authenticated backend API call')
+
+    const data = await callAuthenticatedAPI(walletClient, '/api/gacha/mint', {
+      cardIds,
+      wallet: address.toLowerCase(),
+      qty: cardIds.length,
+    })
+
+    const resultMap = new Map()
+    if (Array.isArray(data?.results)) {
+      for (const r of data.results) {
+        if (r?.success && r.tokenId) resultMap.set(r.tokenId, r.tokenId)
       }
+    } else if (data?.success && data.tokenId) {
+      resultMap.set(data.tokenId, data.tokenId)
+    }
+
+    const tokenIds = cardIds.map(() => null)
+    let idx = 0
+    for (const [tid] of resultMap) {
+      if (idx < tokenIds.length) tokenIds[idx++] = tid
     }
 
     console.log('✅ Batch mint completed. TokenIds:', tokenIds)
