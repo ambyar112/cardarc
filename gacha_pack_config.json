@@ -1,0 +1,10 @@
+{
+  "packId": {
+    "token": "id-format",
+    "price": "number-wei",
+    "qty": "int-amount"
+  },
+  "pokemon": { "token": "PKM-x001", "price": 0, "qty": 1 },
+  "yugioh": { "token": "YGO-x001", "price": 0, "qty": 1 },
+  "dragonball": { "token": "DBS-x001", "price": 0, "qty": 1 }
+}

@@ -1,16 +1,14 @@
 /**
- * ═══════════════════════════════════════════════════════════════════════
  * GACHA MINT BACKEND - DIRECT MINT (SIMPLE & SECURE)
- * ═══════════════════════════════════════════════════════════════════════
- * 
+ *
  * Backend endpoint that:
  *   1. Verifies user actually pulled gacha (checks gacha_log table)
  *   2. Uses DEPLOYER wallet to call mintCard() directly
  *   3. Returns tokenId to frontend
- * 
+ *
  * This is SIMPLER than signature-based approach and works immediately!
  * User never calls blockchain directly - backend does everything.
- * 
+ *
  * Environment variables required:
  *   SUPABASE_URL - Service role URL
  *   SUPABASE_SERVICE_KEY - Service role key (admin access)
@@ -51,11 +49,6 @@ const ARC_CARDS_ABI = [
   'function cardToTokenId(string calldata cardId) external view returns (uint256)',
 ];
 
-interface MintRequest {
-  wallet: string;
-  cardId: string;
-}
-
 interface MintResponse {
   success: boolean;
   tokenId?: number;
@@ -63,80 +56,32 @@ interface MintResponse {
   reason?: string;
 }
 
-/**
- * Verify user owns this card in their collection (no time limit)
- */
-async function verifyCardOwnership(wallet: string, cardId: string): Promise<boolean> {
-  const { data, error } = await supabaseAdmin
-    .from('collection')
-    .select('id')
-    .eq('wallet', wallet.toLowerCase())
-    .eq('card_id', cardId)
-    .limit(1);
-
-  if (error) {
-    console.error('Card ownership verification error:', error);
-    return false;
-  }
-
-  return data && data.length > 0;
-}
-
-/**
- * Check if already minted - return existing tokenId if found
- */
-async function getExistingMint(wallet: string, cardId: string): Promise<number | null> {
-  const { data, error } = await supabaseAdmin
-    .from('collection')
-    .select('nft_token_id')
-    .eq('wallet', wallet.toLowerCase())
-    .eq('card_id', cardId)
-    .limit(1)
-    .single();
-
-  if (error || !data) {
-    return null;
-  }
-
-  return data.nft_token_id ?? null;
-}
-
-/**
- * Update collection table with nft_token_id after mint
- * Collection entry should already exist from gacha claim
- */
-async function updateCollectionTokenId(
-  wallet: string, 
-  cardId: string, 
-  tokenId: number
-): Promise<boolean> {
-  // Update existing collection entry with nft_token_id
-  const { error } = await supabaseAdmin
-    .from('collection')
-    .update({ nft_token_id: tokenId })
-    .eq('wallet', wallet.toLowerCase())
-    .eq('card_id', cardId)
-    .is('nft_token_id', null); // Only update if not already set
-
-  if (error) {
-    console.error('Collection update error:', error);
-    // Don't fail entire mint if DB update fails - NFT is already on blockchain
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Validate Ethereum address format
- */
 function isValidAddress(address: string): boolean {
   return /^0x[0-9a-fA-F]{40}$/.test(address);
 }
 
+async function updateCollectionTokenId(
+  wallet: string,
+  cardId: string,
+  tokenId: number
+): Promise<boolean> {
+  const { error } = supabaseAdmin
+    .from('collection')
+    .update({ nft_token_id: tokenId })
+    .eq('wallet', wallet.toLowerCase())
+    .eq('card_id', cardId)
+    .is('nft_token_id', null);
+
+  if (error) {
+    console.error('Collection update error:', error);
+    return false;
+  }
+  return true;
+}
+
 /**
  * Main mint handler - wrapped with auth middleware
- * Wallet signature is verified before reaching this handler
+ * Accepts either cardId (string) or cardIds (string[]).
  */
 const handler = async (wallet: string, body: any): Promise<Response> => {
   try {
@@ -148,18 +93,47 @@ const handler = async (wallet: string, body: any): Promise<Response> => {
       );
     }
 
-    const { cardId } = body;
+    const cardIdRaw = body.cardId;
+    const cardIdsRaw = body.cardIds;
+    const qty = Math.min(100, Math.max(1, Number(body.qty || 1) || 1));
 
-    // Wallet is already verified and lowercase from auth middleware
-
-    if (!cardId || typeof cardId !== 'string' || cardId.length > 100) {
+    if (qty <= 0 || qty > 100) {
       return new Response(
-        JSON.stringify({ success: false, reason: 'Invalid card ID' }),
+        JSON.stringify({ success: false, reason: 'Invalid qty' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Setup blockchain connection FIRST (need it for queries)
+    if (!isValidAddress(wallet)) {
+      return new Response(
+        JSON.stringify({ success: false, reason: 'Wallet required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!CONTRACT_ADDRESS) {
+      return new Response(
+        JSON.stringify({ success: false, reason: 'Contract not configured' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    let cardIds: string[] = [];
+    if (Array.isArray(cardIdsRaw)) {
+      cardIds = cardIdsRaw.map(String).filter(Boolean);
+    } else if (typeof cardIdRaw === 'string' && cardIdRaw.trim()) {
+      cardIds = [cardIdRaw.trim()];
+    }
+
+    if (!cardIds.length) {
+      return new Response(
+        JSON.stringify({ success: false, reason: 'Missing cardId/cardIds' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    cardIds = cardIds.slice(0, qty);
+
     const provider = new ethers.JsonRpcProvider(ARC_RPC_URL, {
       chainId: CHAIN_ID,
       name: 'arc-testnet',
@@ -168,115 +142,59 @@ const handler = async (wallet: string, body: any): Promise<Response> => {
     const signer = new ethers.Wallet(DEPLOYER_PRIVATE_KEY!, provider);
     const contract = new ethers.Contract(CONTRACT_ADDRESS!, ARC_CARDS_ABI, signer);
 
-    // Check if already minted - query BLOCKCHAIN first!
-    let existingTokenId: number | null = null;
-    
-    try {
-      const tid = await contract.cardToTokenId(cardId);
-      const tokenIdNum = Number(tid);
-      if (tokenIdNum > 0) {
-        existingTokenId = tokenIdNum;
-        console.log('Card exists on blockchain, tokenId:', existingTokenId);
-        
-        // CRITICAL FIX: Verify ownership for ERC1155!
-        // Same cardId can be minted multiple times to different wallets
-        try {
-          const balance = await contract.balanceOf(wallet, tokenIdNum);
-          const balanceNum = Number(balance);
-          
-          if (balanceNum > 0) {
-            console.log(`Wallet ${wallet} already owns tokenId ${tokenIdNum}`);
-            // Update DB with tokenId if missing
-            await updateCollectionTokenId(wallet, cardId, tokenIdNum);
-            
-            return new Response(
-              JSON.stringify({ 
-                success: true, 
-                tokenId: tokenIdNum,
-                reason: 'Already minted to this wallet (returned existing tokenId)'
-              }),
-              { status: 200, headers: { 'Content-Type': 'application/json' } }
-            );
-          } else {
-            console.log(`TokenId ${tokenIdNum} exists but owned by different wallet. Will mint new instance.`);
-            existingTokenId = null; // Force new mint
+    const results: MintResponse[] = [];
+    for (const cardId of cardIds) {
+      let existingTokenId: number | null = null;
+      try {
+        const tid = await contract.cardToTokenId(cardIds[0]);
+        const tokenIdNum = Number(tid);
+        if (tokenIdNum > 0) {
+          try {
+            const balanceNum = Number(await contract.balanceOf(wallet, tokenIdNum));
+            if (balanceNum > 0) {
+              await updateCollectionTokenId(wallet, cardIds[0], tokenIdNum);
+              results.push({ success: true, tokenId: tokenIdNum });
+              continue;
+            }
+          } catch {
+            existingTokenId = null;
           }
-        } catch (balanceError) {
-          console.log('Balance check error, will proceed with new mint:', balanceError);
-          existingTokenId = null;
         }
+      } catch {
+        // card not known yet
       }
-    } catch (e) {
-      console.log('Blockchain query error (might not be minted yet):', e);
+
+      try {
+        const tx = await contract.mintCard(wallet, cardIds[0], { gasLimit: 500000 });
+        const receipt = await tx.wait();
+        if (receipt.status !== 1) {
+          results.push({ success: false, reason: 'Transaction failed' });
+          continue;
+        }
+        let tokenId = 0;
+        try { tokenId = Number(await contract.cardToTokenId(cardId)); } catch {}
+        await updateCollectionTokenId(wallet, cardIds[0], tokenId);
+        results.push({ success: true, tokenId, txHash: receipt.hash });
+      } catch (e: any) {
+        results.push({ success: false, reason: e?.message || 'mint reverted' });
+      }
     }
 
-    // Mint the card (no ownership check needed - blockchain contract enforces access control)
-    console.log('Minting card:', cardId, 'to:', wallet);
-
-    // Call mintCard - this is where the actual minting happens!
-    const tx = await contract.mintCard(wallet, cardId, {
-      gasLimit: 500000, // Explicit gas limit
-    });
-
-    console.log('Mint tx sent:', tx.hash);
-
-    // Wait for confirmation
-    const receipt = await tx.wait();
-
-    if (receipt.status !== 1) {
-      throw new Error('Transaction failed');
-    }
-
-    console.log('Mint tx confirmed:', receipt.hash);
-
-    // Get tokenId from contract
-    let tokenId: number;
-    try {
-      const tid = await contract.cardToTokenId(cardId);
-      tokenId = Number(tid);
-    } catch (e) {
-      console.error('Failed to get tokenId:', e);
-      tokenId = 0; // Fallback
-    }
-
-    // Update collection table with tokenId (entry should already exist from gacha claim)
-    const updated = await updateCollectionTokenId(wallet, cardId, tokenId);
-    if (!updated) {
-      console.error('Failed to update collection DB, but mint succeeded on blockchain');
-    }
-
-    // Success!
-    const response: MintResponse = {
-      success: true,
-      tokenId,
-      txHash: receipt.hash,
-    };
-
+    const ok = results.some(r => r.success);
     return new Response(
-      JSON.stringify(response),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: ok, results }),
+      { status: ok ? 200 : 500, headers: { 'Content-Type': 'application/json' } }
     );
-
   } catch (error: any) {
     console.error('Mint handler error:', error);
-    
-    // Return detailed error for debugging
-    let reason = 'Internal server error';
-    if (error.message) {
-      reason = error.message;
-    }
-    if (error.reason) {
-      reason = error.reason;
-    }
-
+    const reason = error?.message || 'Internal server error';
     return new Response(
       JSON.stringify({ success: false, reason }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
-}
+};
 
-// Export handler wrapped with authentication middleware
 export default withAuth(handler)
 
 export const config = {
