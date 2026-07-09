@@ -22,10 +22,17 @@ function timeAgo(d) {
   if (m < 1440) return `${Math.floor(m/60)}h ago`
   return `${Math.floor(m/1440)}d ago`
 }
-function gameLabel(cardId) {
-  if (!cardId) return '⚡ PKM'
-  if (cardId.startsWith('ygo-')) return '⚔️ YGO'
-  if (cardId.startsWith('dbs-')) return '🔥 DBS'
+function gameLabel(cardId, cardName) {
+  if (cardId) {
+    if (cardId.startsWith('ygo-')) return '⚔️ YGO'
+    if (cardId.startsWith('dbs-')) return '🔥 DBS'
+    // known pokemon sets / numeric-local ids default PKM
+    if (/^(sv|swsh|sm|xy|bw|dp|base)/i.test(cardId)) return '⚡ PKM'
+  }
+  // name fallback — avoid mislabel (e.g. Snorlax stored under wrong id)
+  const n = (cardName || '').toLowerCase()
+  if (n && /yugi|dark magician|blue-eyes|exodia/.test(n)) return '⚔️ YGO'
+  if (n && /goku|vegeta|broly|dragon ball/.test(n)) return '🔥 DBS'
   return '⚡ PKM'
 }
 function formatCardIdDisplay(cardId) {

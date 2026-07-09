@@ -131,12 +131,12 @@ export async function callAuthenticatedAPI<T = any>(
     if (!response.ok) {
       // Handle authentication errors
       if (response.status === 401) {
-        throw new Error('Authentication failed: ' + (data.error || 'Invalid signature'));
+        throw new Error('Authentication failed: ' + (data.error || data.reason || 'Invalid signature'));
       }
       if (response.status === 429) {
-        throw new Error('Rate limit exceeded: ' + (data.error || 'Too many requests'));
+        throw new Error('Rate limit exceeded: ' + (data.error || data.reason || 'Too many requests'));
       }
-      throw new Error(data.error || `API error: ${response.status}`);
+      throw new Error(data.error || data.reason || `API error: ${response.status}`);
     }
 
     console.log('[apiClient] Request successful:', endpoint);
@@ -164,7 +164,7 @@ export async function callAuthenticatedAPI<T = any>(
 
 export const api = {
   /**
-   * Claim gacha pack
+   * Claim gacha voucher (legacy path — prefer mintCard for on-chain mint)
    */
   async claimGacha(
     walletClient: WalletClient | undefined,
@@ -174,23 +174,64 @@ export const api = {
   },
 
   /**
-   * Mint NFT cards
+   * Mint a single NFT via backend deployer (authenticated)
+   */
+  async mintCard(
+    walletClient: WalletClient | undefined,
+    cardId: string
+  ): Promise<{ success: boolean; txHash?: string; tokenId?: number; reason?: string }> {
+    return callAuthenticatedAPI(walletClient, '/api/gacha/mint', { cardId });
+  },
+
+  /**
+   * Mint NFT cards (sequential single-card mints)
    */
   async mintCards(
     walletClient: WalletClient | undefined,
     cards: any[]
-  ): Promise<{ success: boolean; txHash: string; tokenIds: number[] }> {
-    return callAuthenticatedAPI(walletClient, '/api/gacha/mint', { cards });
+  ): Promise<{ success: boolean; tokenIds: (number | null)[] }> {
+    const tokenIds: (number | null)[] = [];
+    for (const c of cards || []) {
+      try {
+        const r = await callAuthenticatedAPI<{ success: boolean; tokenId?: number }>(
+          walletClient,
+          '/api/gacha/mint',
+          { cardId: c.id || c.cardId }
+        );
+        tokenIds.push(r?.tokenId ?? null);
+      } catch {
+        tokenIds.push(null);
+      }
+    }
+    return { success: tokenIds.some((t) => t != null), tokenIds };
   },
 
   /**
-   * Add cards to collection
+   * Add cards to collection (supports single card or cards[])
+   * Backend accepts { card } or { cards: [...] }
    */
   async addToCollection(
     walletClient: WalletClient | undefined,
     cards: any[]
   ): Promise<{ success: boolean }> {
-    return callAuthenticatedAPI(walletClient, '/api/collection/add', { cards });
+    const list = Array.isArray(cards) ? cards : [cards];
+    // Normalize payload for backend
+    const normalized = list.map((c) => ({
+      id: c.id,
+      name: c.name || c.id || 'Unknown',
+      tier: c.tier || c.rarity || 'common',
+      img: c.img,
+      setId: c.setId,
+      localId: c.localId,
+      hp: c.hp,
+      types: c.types,
+      rarity: c.rarity,
+      atk: c.atk,
+      def: c.def,
+      level: c.level,
+      nftTokenId: c.nftTokenId ?? c.nft_token_id ?? null,
+    }));
+    return callAuthenticatedAPI(walletClient, '/api/collection/add', { cards: normalized });
   },
 };
 

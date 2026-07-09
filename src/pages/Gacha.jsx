@@ -446,7 +446,8 @@ export default function Gacha() {
           // Mint NFT on-chain immediately — await result to get tokenId
           let nftTokenId = null
           try {
-            nftTokenId = await mintCardNFT(address, card)
+            if (!walletClient) throw new Error('Wallet client not ready for signed mint')
+            nftTokenId = await mintCardNFT(address, card, walletClient)
             console.log('✅ Minted NFT tokenId:', nftTokenId)
           } catch (e) {
             console.warn('Mint failed, saving collection without tokenId:', e.message)
@@ -479,7 +480,8 @@ export default function Gacha() {
           // Batch mint NFTs on-chain immediately — await tokenIds
           let tokenIds = []
           try {
-            tokenIds = await mintCardBatchNFT(address, cards)
+            if (!walletClient) throw new Error('Wallet client not ready for signed mint')
+            tokenIds = await mintCardBatchNFT(address, cards, walletClient)
             console.log('✅ Batch minted NFT tokenIds:', tokenIds)
           } catch (e) {
             console.warn('Batch mint failed, saving collections without tokenIds:', e.message)

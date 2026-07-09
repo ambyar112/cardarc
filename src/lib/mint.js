@@ -1,41 +1,32 @@
 // NFT Minting — ArcCards ERC-1155 (Backend Mint Flow - SECURE)
-// Calls backend API which mints using deployer wallet
-// Returns tokenId immediately for collection storage
-import { getAccount } from '@wagmi/core'
-import { wagmiConfig } from './wagmi'
+// Calls authenticated backend API which mints using deployer wallet.
+// Requires wallet signature (apiClient) — bare {wallet, cardId} is rejected with 401.
+import { callAuthenticatedAPI } from './apiClient'
 
-// Mint 1 kartu via backend API — returns tokenId
-export async function mintCardNFT(address, card) {
+/**
+ * Mint 1 card via backend API — returns tokenId
+ * @param {string} address - connected wallet (must match walletClient)
+ * @param {{ id: string }} card
+ * @param {import('viem').WalletClient} walletClient - required for EIP-191 auth
+ */
+export async function mintCardNFT(address, card, walletClient) {
   try {
-    const account = getAccount(wagmiConfig)
-    if (!account.address) throw new Error('Wallet not connected')
+    if (!address) throw new Error('Wallet not connected')
+    if (!walletClient) {
+      throw new Error('Wallet client required for signed mint. Connect wallet and try again.')
+    }
+    if (!card?.id) throw new Error('Invalid card')
 
     const cardId = card.id
+    console.log('Calling authenticated backend mint API for:', cardId)
 
-    console.log('Calling backend mint API for:', cardId)
-
-    // Call backend API with 30s timeout - backend will mint using deployer wallet
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
-    
-    const response = await fetch('/api/gacha/mint', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        wallet: address,
-        cardId: cardId,
-      }),
-      signal: controller.signal,
+    const data = await callAuthenticatedAPI(walletClient, '/api/gacha/mint', {
+      cardId,
+      wallet: address.toLowerCase(),
     })
-    
-    clearTimeout(timeoutId)
 
-    const data = await response.json()
-
-    if (!response.ok || !data.success) {
-      throw new Error(data.reason || 'Mint failed')
+    if (!data?.success) {
+      throw new Error(data?.reason || data?.error || 'Mint failed')
     }
 
     console.log('✅ Backend mint succeeded!')
@@ -49,24 +40,29 @@ export async function mintCardNFT(address, card) {
   }
 }
 
-// Batch mint — mints multiple cards by calling backend API for each
-export async function mintCardBatchNFT(address, cards) {
+/**
+ * Batch mint — sequential authenticated mint calls
+ * @param {string} address
+ * @param {Array<{id: string}>} cards
+ * @param {import('viem').WalletClient} walletClient
+ */
+export async function mintCardBatchNFT(address, cards, walletClient) {
   try {
-    const account = getAccount(wagmiConfig)
-    if (!account.address) throw new Error('Wallet not connected')
+    if (!address) throw new Error('Wallet not connected')
+    if (!walletClient) {
+      throw new Error('Wallet client required for signed mint. Connect wallet and try again.')
+    }
 
-    console.log('Batch minting', cards.length, 'cards via backend API')
+    console.log('Batch minting', cards.length, 'cards via authenticated backend API')
 
     const tokenIds = []
-    
-    // Mint each card sequentially via backend
     for (const card of cards) {
       try {
-        const tokenId = await mintCardNFT(address, card)
+        const tokenId = await mintCardNFT(address, card, walletClient)
         tokenIds.push(tokenId)
       } catch (e) {
-        console.error('Failed to mint card:', card.id, e.message)
-        tokenIds.push(null) // Push null for failed mints
+        console.error('Failed to mint card:', card?.id, e.message)
+        tokenIds.push(null)
       }
     }
 
@@ -77,6 +73,3 @@ export async function mintCardBatchNFT(address, cards) {
     throw e
   }
 }
-
-// Note: Balance check function removed
-// All minting now goes through backend API for security

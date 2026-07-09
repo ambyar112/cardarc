@@ -25,7 +25,8 @@
     "react-router-dom": "^7.16.0",
     "tailwindcss": "^3.4.19",
     "viem": "^2.17.0",
-    "wagmi": "^2.9.4"
+    "wagmi": "^2.9.4",
+    "ethers": "^6.16.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
@@ -40,7 +41,6 @@
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
-    "ethers": "^6.16.0",
     "globals": "^15.11.0",
     "hardhat": "^2.28.6",
     "vite": "^5.4.10"

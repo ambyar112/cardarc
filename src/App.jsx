@@ -61,7 +61,7 @@ export default function App() {
         <span className="sora text-lg font-extrabold italic" style={{ color: '#e9feff' }}>ARCCARDS</span>
         <nav aria-label="Footer navigation" className="flex gap-6">
           {[
-            { label: 'Docs', href: '#' },
+            { label: 'Docs', href: 'https://github.com/ambyar112/cardarc' },
             { label: 'X',    href: 'https://x.com/ShafiqqMu' },
           ].map(l => (
             <a key={l.label} href={l.href} target={l.href.startsWith('http') ? '_blank' : undefined} rel={l.href.startsWith('http') ? 'noreferrer' : undefined}

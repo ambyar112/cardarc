@@ -20,14 +20,13 @@ import { createClient } from '@supabase/supabase-js';
 import { withAuth } from '../_middleware/auth';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; // Match Vercel env var name
+const SUPABASE_SERVICE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  throw new Error('Supabase configuration required');
-}
-
-// Admin Supabase client (service role - bypasses RLS)
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+// Lazy — no module-load throw
+const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+  : null as any;
 
 interface AddToCollectionRequest {
   wallet: string;
@@ -207,35 +206,76 @@ async function addCardToCollection(
  */
 const handler = async (wallet: string, body: any): Promise<Response> => {
   try {
-    const { card, nftTokenId } = body;
-    
-    // Wallet is already verified and lowercase from auth middleware
-    
-    // Validate card data
-    if (!card || !card.id || !card.name || !card.tier) {
+    if (!supabaseAdmin) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Collection endpoint misconfigured (Supabase env)' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Accept:
+    // 1) { card, nftTokenId }
+    // 2) { cards: [{ id, name, tier, nftTokenId? }, ...] }
+    // 3) { cards: [...], } with nftTokenId on each item
+    let items: Array<{ card: any; nftTokenId?: any }> = []
+
+    if (Array.isArray(body?.cards) && body.cards.length) {
+      items = body.cards.map((c: any) => ({
+        card: {
+          id: c.id,
+          name: c.name,
+          img: c.img,
+          tier: c.tier || c.rarity || 'common',
+          setId: c.setId,
+          localId: c.localId,
+          hp: c.hp,
+          types: c.types,
+          rarity: c.rarity,
+          atk: c.atk,
+          def: c.def,
+          level: c.level,
+        },
+        nftTokenId: c.nftTokenId ?? c.nft_token_id ?? body.nftTokenId ?? null,
+      }))
+    } else if (body?.card) {
+      items = [{ card: body.card, nftTokenId: body.nftTokenId }]
+    }
+
+    if (!items.length) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Invalid card data. Required: id, name, tier' 
+          error: 'Invalid card data. Required: card{id,name,tier} or cards[]' 
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
-    
-    // Add to collection
-    const result = await addCardToCollection(wallet, card, nftTokenId);
-    
-    if (!result.success) {
-      return new Response(
-        JSON.stringify({ success: false, error: result.error }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+
+    for (const item of items) {
+      const card = item.card
+      if (!card || !card.id || !card.name || !card.tier) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Invalid card data. Required: id, name, tier' 
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      const result = await addCardToCollection(wallet, card, item.nftTokenId);
+      if (!result.success) {
+        return new Response(
+          JSON.stringify({ success: false, error: result.error }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
     }
     
-    // Success
     const response: AddToCollectionResponse = {
       success: true,
-      message: 'Card added to collection successfully',
+      message: items.length > 1
+        ? `${items.length} cards added to collection successfully`
+        : 'Card added to collection successfully',
     };
     
     return new Response(
