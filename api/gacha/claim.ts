@@ -7,7 +7,7 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { withAuth } from '../_middleware/auth'
+import { withAuth } from '../_middleware/auth.js'
 
 const CHAIN_ID = parseInt(process.env.CHAIN_ID || '5042002', 10)
 

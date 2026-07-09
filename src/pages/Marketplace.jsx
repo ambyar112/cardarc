@@ -22,17 +22,23 @@ function timeAgo(d) {
   if (m < 1440) return `${Math.floor(m/60)}h ago`
   return `${Math.floor(m/1440)}d ago`
 }
-function gameLabel(cardId, cardName) {
+function gameLabel(cardId, cardName, setId) {
+  const n = (cardName || '').toLowerCase()
+  // Name overrides bad set_id / wrong ygo- prefix in dirty marketplace rows
+  if (n && /\b(snorlax|pikachu|charizard|mewtwo|eevee|bulbasaur|squirtle|magnezone|roserade|shiinotic|tadbulb|smeargle|jasmine)\b/i.test(n)) {
+    return '⚡ PKM'
+  }
+  if (n && /yugi|dark magician|blue-eyes|exodia|bokoichi|bowganian|borreload|brain crusher/i.test(n)) {
+    return '⚔️ YGO'
+  }
+  if (n && /goku|vegeta|broly|dragon ball/i.test(n)) return '🔥 DBS'
   if (cardId) {
     if (cardId.startsWith('ygo-')) return '⚔️ YGO'
     if (cardId.startsWith('dbs-')) return '🔥 DBS'
-    // known pokemon sets / numeric-local ids default PKM
     if (/^(sv|swsh|sm|xy|bw|dp|base)/i.test(cardId)) return '⚡ PKM'
   }
-  // name fallback — avoid mislabel (e.g. Snorlax stored under wrong id)
-  const n = (cardName || '').toLowerCase()
-  if (n && /yugi|dark magician|blue-eyes|exodia/.test(n)) return '⚔️ YGO'
-  if (n && /goku|vegeta|broly|dragon ball/.test(n)) return '🔥 DBS'
+  if (setId === 'yugioh') return '⚔️ YGO'
+  if (setId === 'dragonball') return '🔥 DBS'
   return '⚡ PKM'
 }
 function formatCardIdDisplay(cardId) {
@@ -223,12 +229,8 @@ function ListingCard({ listing, address, onBuy, onCancel, onEdit, cancelingId })
         })()
       : null
 
-  // Determine game from cardId OR set_id
-  const gameTag = cid.startsWith('ygo-') ? '⚔️ YGO'
-    : cid.startsWith('dbs-') ? '🔥 DBS'
-    : listing.set_id === 'yugioh' ? '⚔️ YGO'
-    : listing.set_id === 'dragonball' ? '🔥 DBS'
-    : '⚡ PKM'
+  // Determine game (name can override dirty set_id / cardId)
+  const gameTag = gameLabel(cid, displayName, listing.set_id)
 
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col"
@@ -444,7 +446,7 @@ export default function Marketplace() {
 
   const browseListings = listings.filter(l => {
     if (!selectedPack) return true
-    const g=gameLabel(l.cardId)
+    const g=gameLabel(l.cardId, l.card_name, l.set_id)
     return selectedPack==='pokemon'?g==='⚡ PKM':selectedPack==='yugioh'?g==='⚔️ YGO':selectedPack==='dragonball'?g==='🔥 DBS':true
   })
   const myListings = listings.filter(l => {
@@ -452,7 +454,7 @@ export default function Marketplace() {
     const isOwn = l.seller.toLowerCase() === address.toLowerCase()
     if (!isOwn) return false
     if (!selectedPack) return true
-    const g=gameLabel(l.cardId)
+    const g=gameLabel(l.cardId, l.card_name, l.set_id)
     return selectedPack==='pokemon'?g==='⚡ PKM':selectedPack==='yugioh'?g==='⚔️ YGO':selectedPack==='dragonball'?g==='🔥 DBS':true
   })
   const filteredSellCards = myCards.filter(c => {
@@ -465,15 +467,15 @@ export default function Marketplace() {
   const filteredTrades = trades.filter(t => {
     const searchMatch = !tradeSearch||t.card_name?.toLowerCase().includes(tradeSearch.toLowerCase())||t.seller?.includes(tradeSearch)||t.buyer?.includes(tradeSearch)
     if (!selectedPack) return searchMatch
-    const g=gameLabel(t.card_id)
+    const g=gameLabel(t.card_id, t.card_name, t.set_id)
     const packMatch = selectedPack==='pokemon'?g==='⚡ PKM':selectedPack==='yugioh'?g==='⚔️ YGO':selectedPack==='dragonball'?g==='🔥 DBS':true
     return searchMatch && packMatch
   })
 
   // Pack counts
-  const pokemonCount = listings.filter(l => gameLabel(l.cardId) === '⚡ PKM').length
-  const yugiohCount = listings.filter(l => gameLabel(l.cardId) === '⚔️ YGO').length
-  const dragonballCount = listings.filter(l => gameLabel(l.cardId) === '🔥 DBS').length
+  const pokemonCount = listings.filter(l => gameLabel(l.cardId, l.card_name, l.set_id) === '⚡ PKM').length
+  const yugiohCount = listings.filter(l => gameLabel(l.cardId, l.card_name, l.set_id) === '⚔️ YGO').length
+  const dragonballCount = listings.filter(l => gameLabel(l.cardId, l.card_name, l.set_id) === '🔥 DBS').length
 
   function handlePackSelect(pack) {
     setSelectedPack(pack)
@@ -724,7 +726,7 @@ export default function Marketplace() {
                     return (
                       <tr key={t.id||i} className={`transition-colors hover:bg-white/5 ${isSeller||isBuyer?'bg-primary/5 border-l-2 border-primary':''}`}>
                         <td className="px-4 py-3"><div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background:tc }} /><span className="font-body text-xs text-on-surface font-semibold truncate max-w-[120px]">{t.card_name||formatCardIdDisplay(t.card_id)}</span></div></td>
-                        <td className="px-4 py-3"><span className="font-mono text-[10px] text-on-surface-variant">{gameLabel(t.card_id)}</span></td>
+                        <td className="px-4 py-3"><span className="font-mono text-[10px] text-on-surface-variant">{gameLabel(t.card_id, t.card_name, t.set_id)}</span></td>
                         <td className="px-4 py-3"><span className={`font-mono text-[10px] ${isSeller?'text-primary font-bold':'text-tertiary'}`}>{isSeller?'YOU':shortAddr(t.seller)}</span></td>
                         <td className="px-4 py-3"><span className={`font-mono text-[10px] ${isBuyer?'text-primary font-bold':'text-on-surface-variant'}`}>{isSold?(isBuyer?'YOU':shortAddr(t.buyer)):'—'}</span></td>
                         <td className="px-4 py-3"><span className="font-mono text-xs font-bold" style={{ color:tc }}>{t.price_usdc} USDC</span></td>
