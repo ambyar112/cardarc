@@ -23,6 +23,12 @@ import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import { withAuth } from '../_middleware/auth';
 
+// gacha helpers
+import { PACKS } from '../../src/pages/Gacha';
+import { fetchSetCards } from '../../src/lib/tcgdex';
+import { fetchYugiohCards } from '../../src/lib/yugioh';
+import { fetchDragonBallCards } from '../../src/lib/dragonball';
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || process.env.SIGNER_PRIVATE_KEY;
@@ -148,16 +154,71 @@ const handler = async (wallet: string, body: any): Promise<Response> => {
       );
     }
 
-    const { cardId } = body;
+    const cardIdRaw = body.cardId;
+    const packType = String(body.packType || '').trim().toLowerCase();
+    const qty = Math.min(100, Math.max(1, Number(body.qty || 1) || 1));
 
-    // Wallet is already verified and lowercase from auth middleware
-
-    if (!cardId || typeof cardId !== 'string' || cardId.length > 100) {
+    if (qty <= 0 || qty > 100) {
       return new Response(
-        JSON.stringify({ success: false, reason: 'Invalid card ID' }),
+        JSON.stringify({ success: false, reason: 'Invalid qty' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    if (!isValidAddress(wallet)) {
+      return new Response(
+        JSON.stringify({ success: false, reason: 'Wallet required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Contract must be configured
+    if (!CONTRACT_ADDRESS) {
+      return new Response(
+        JSON.stringify({ success: false, reason: 'Contract not configured' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    let cardIds: string[] = [];
+    if (Array.isArray(cardIdRaw)) {
+      cardIds = cardIdRaw.map(String).filter(Boolean);
+    } else if (typeof cardIdRaw === 'string' && cardIdRaw.trim()) {
+      cardIds = [cardIdRaw.trim()];
+    }
+
+    if (!cardIds.length && packType) {
+      const selected = PACKS.find(p => p.id === packType);
+      if (!selected) {
+        return new Response(
+          JSON.stringify({ success: false, reason: 'Unknown packType', packType }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      if (selected.game === 'pokemon' && selected.sets?.length) {
+        const lists = await Promise.all(selected.sets.map(fetchSetCards)).then(arr => arr.flat());
+        const allowed = lists.filter(c => c.img || c.id).map(c => c.id || c.localId).filter(Boolean) as string[];
+        const pool = allowed.slice(0, 120);
+        cardIds = Array.from({ length: qty }, () => pool[Math.floor(Math.random() * pool.length)]);
+      } else if (selected.game === 'yugioh' && selected.ygoType) {
+        const cards = await fetchYugiohCards(selected.ygoType, 120);
+        const pool = cards.filter(c => c.img || c.id).map(c => c.id || c.localId).filter(Boolean) as string[];
+        cardIds = Array.from({ length: qty }, () => pool[Math.floor(Math.random() * pool.length)]);
+      } else if (selected.game === 'dragonball') {
+        const cards = await fetchDragonBallCards(null, 120);
+        const pool = cards.filter(c => c.img || c.id).map(c => c.id || c.localId).filter(Boolean) as string[];
+        cardIds = Array.from({ length: qty }, () => pool[Math.floor(Math.random() * pool.length)]);
+      }
+    }
+
+    if (!cardIds.length) {
+      return new Response(
+        JSON.stringify({ success: false, reason: 'Missing cardId/packType', packType, qty }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    cardIds = cardIds.slice(0, qty);
 
     // Setup blockchain connection FIRST (need it for queries)
     const provider = new ethers.JsonRpcProvider(ARC_RPC_URL, {

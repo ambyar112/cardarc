@@ -23,6 +23,8 @@ export async function mintCardNFT(address, card, walletClient) {
     const data = await callAuthenticatedAPI(walletClient, '/api/gacha/mint', {
       cardId,
       wallet: address.toLowerCase(),
+      packType: card.packType || null,
+      qty: 1,
     })
 
     if (!data?.success) {
