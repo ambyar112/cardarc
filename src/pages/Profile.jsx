@@ -461,9 +461,10 @@ export default function Profile() {
         <ListModal
           card={listingCard}
           walletAddress={address}
+          walletClient={walletClient}
           onClose={() => setListingCard(null)}
           onListed={() => setListingCard(null)}
-        />
+        />)}
       )}
     </div>
   )

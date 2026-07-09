@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useWalletClient } from 'wagmi'
 import CardItem from '../components/CardItem'
 import ListModal from '../components/ListModal'
 import BulkListModal from '../components/BulkListModal'
@@ -12,6 +12,7 @@ const TIER_COLORS = { legendary:'#f5c84c', epic:'#a78bfa', rare:'#16e6ff', commo
 
 export default function Collection() {
   const { address, isConnected } = useAccount()
+  const { data: walletClient } = useWalletClient()
   const navigate = useNavigate()
   const [cards, setCards]             = useState([])
   const [loading, setLoading]         = useState(true)
@@ -406,7 +407,7 @@ export default function Collection() {
 
       {/* Single ListModal */}
       {listingCard && (
-        <ListModal card={listingCard} walletAddress={address}
+        <ListModal card={listingCard} walletAddress={address} walletClient={walletClient}
           onClose={() => setListingCard(null)} onListed={() => setListingCard(null)} />
       )}
 

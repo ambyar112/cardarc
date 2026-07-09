@@ -9,7 +9,7 @@ import { mintCardNFT } from '../lib/mint'
 
 const TIER_COLORS = { legendary: '#f5c84c', epic: '#a78bfa', rare: '#16e6ff', common: '#9aa3b2' }
 
-export default function ListModal({ card, walletAddress, onClose, onListed }) {
+export default function ListModal({ card, walletAddress, walletClient, onClose, onListed }) {
   const [price, setPrice]   = useState('')
   const [step, setStep]     = useState('form') // form | minting | approving | listing | done | error
   const [errorMsg, setErrorMsg] = useState('')
@@ -94,7 +94,7 @@ export default function ListModal({ card, walletAddress, onClose, onListed }) {
         
         try {
           // Try to mint the NFT automatically
-          const newTokenId = await mintCardNFT(walletAddress, card)
+          const newTokenId = await mintCardNFT(walletAddress, card, walletClient)
           tokenId = newTokenId
           
           // Verify mint succeeded

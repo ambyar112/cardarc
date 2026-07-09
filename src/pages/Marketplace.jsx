@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useWalletClient } from 'wagmi'
 import { getActiveListingsFromSupabase, getMarketplaceHistory,
          markListingSold, markListingCancelled, saveListingToSupabase,
          getCollection } from '../lib/supabase'
@@ -749,7 +749,7 @@ export default function Marketplace() {
       {/* Modals */}
       {buyTarget && <PurchaseModal listing={buyTarget} onClose={()=>setBuyTarget(null)} onSuccess={()=>{setBuyTarget(null);loadListings()}} />}
       {editTarget && <EditPriceModal listing={editTarget} onClose={()=>setEditTarget(null)} onSuccess={()=>{setEditTarget(null);loadListings()}} />}
-      {listingCard && <ListModal card={listingCard} walletAddress={address} onClose={()=>setListingCard(null)} onListed={()=>{setListingCard(null);loadListings()}} />}
+      {listingCard && <ListModal card={listingCard} walletAddress={address} walletClient={walletClient} onClose={()=>setListingCard(null)} onListed={()=>{setListingCard(null);loadListings()}} />}
       {bulkModal && bulkCards.length>0 && <BulkListModal cards={bulkCards} walletAddress={address} onClose={()=>setBulkModal(false)} onDone={()=>{setBulkModal(false);setSelectMode(false);setBulkSelected(new Set());loadListings()}} />}
     </div>
   )
