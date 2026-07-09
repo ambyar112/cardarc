@@ -400,6 +400,20 @@ export default function Gacha() {
 
   const currentPool = pools[selectedPack.id] || []
 
+  async function dismissWalletModal() {
+    try {
+      const closeBtn = document.querySelector('[data-w3m-modal] button, [aria-label="Close"], .w3m-modal-close, [data-testid="wallet-modal-close"], w3m-modal button[aria-label="Close"]')
+      if (closeBtn) {
+        closeBtn.click()
+        await new Promise(r => setTimeout(r, 150))
+        return true
+      }
+    } catch (e) {
+      console.warn('dismiss modal failed:', e?.message || e)
+    }
+    return false
+  }
+
   async function summon(qty) {
     if (summoning) return
     setSummoning(true) // Race condition fix: immediate lock after guard check
@@ -431,6 +445,9 @@ export default function Gacha() {
       }
     }
 
+    // Clear any blocking wallet modal before minting
+    await dismissWalletModal()
+
     try {
       if (qty === 1) {
         const card = pool[Math.floor(Math.random() * pool.length)]
@@ -447,6 +464,8 @@ export default function Gacha() {
           let nftTokenId = null
           try {
             if (!walletClient) throw new Error('Wallet client not ready for signed mint')
+            // If a wallet modal appeared after pool load, surface a clearer error on first failure
+            await dismissWalletModal()
             nftTokenId = await mintCardNFT(address, card, walletClient)
             console.log('✅ Minted NFT tokenId:', nftTokenId)
           } catch (e) {
@@ -481,6 +500,7 @@ export default function Gacha() {
           let tokenIds = []
           try {
             if (!walletClient) throw new Error('Wallet client not ready for signed mint')
+            await dismissWalletModal()
             tokenIds = await mintCardBatchNFT(address, cards, walletClient)
             console.log('✅ Batch minted NFT tokenIds:', tokenIds)
           } catch (e) {

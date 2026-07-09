@@ -28,7 +28,13 @@ export async function mintCardNFT(address, card, walletClient) {
     })
 
     if (!data?.success) {
-      throw new Error(data?.reason || data?.error || 'Mint failed')
+      // Surface a clearer failure message for UI retries
+      const reason = data?.reason || data?.error || 'Mint failed'
+      const err = new Error(reason)
+      err.code = data?.code
+      err.reason = reason
+      err.txHash = data?.txHash || null
+      throw err
     }
 
     console.log('✅ Backend mint succeeded!')
