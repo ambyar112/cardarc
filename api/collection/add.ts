@@ -31,7 +31,7 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 interface AddToCollectionRequest {
   wallet: string;
-  card: {
+  cards?: Array<{
     id: string;
     name: string;
     img?: string;
@@ -44,7 +44,10 @@ interface AddToCollectionRequest {
     atk?: number;
     def?: number;
     level?: number;
-  };
+  }>;
+  card?: AddToCollectionRequest['cards'][number];
+  nftTokenId?: string | number | null;
+}
   nftTokenId?: string | number | null;
 }
 
@@ -205,9 +208,18 @@ async function addCardToCollection(
  * Main handler - wrapped with auth middleware
  * Wallet signature is verified before reaching this handler
  */
+function normalizeCard(raw: any) {
+  if (!raw) return null
+  if (Array.isArray(raw.cards)) return raw.cards.filter(Boolean)
+  if (Array.isArray(raw.card)) return raw.card.filter(Boolean)
+  if (raw.card && typeof raw.card === "object") return [raw.card]
+  return null
+}
+
 const handler = async (wallet: string, body: any): Promise<Response> => {
   try {
-    const { card, nftTokenId } = body;
+    const cardsArray = normalizeCard(body);
+  const { nftTokenId } = body;
     
     // Wallet is already verified and lowercase from auth middleware
     
@@ -222,8 +234,23 @@ const handler = async (wallet: string, body: any): Promise<Response> => {
       );
     }
     
-    // Add to collection
-    const result = await addCardToCollection(wallet, card, nftTokenId);
+    const cardsArrayToUse = cardsArray && cardsArray.length ? cardsArray : [body.card].filter(Boolean)
+  if (!cardsArrayToUse.length) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Invalid card data. Required: id, name, tier' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+  for (const c of cardsArrayToUse) {
+    const result = await addCardToCollection(wallet, c, nftTokenId);
+    if (!result.success) {
+      return new Response(
+        JSON.stringify({ success: false, error: result.error }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+  }
+  const n = cardsArrayToUse.length
     
     if (!result.success) {
       return new Response(
