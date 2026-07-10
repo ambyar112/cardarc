@@ -8,6 +8,7 @@ import { getActiveListingsFromSupabase, getMarketplaceHistory,
 import { fetchOnChainListings, purchaseListing, cancelListing,
          updateListingPrice, parseEther, formatEther } from '../lib/marketplace'
 import ListModal from '../components/ListModal'
+import SellSheet from '../components/SellSheet'
 import BulkListModal from '../components/BulkListModal'
 import CardItem from '../components/CardItem'
 import PackCard from '../components/PackCard'
@@ -752,7 +753,15 @@ export default function Marketplace() {
       {/* Modals */}
       {buyTarget && <PurchaseModal listing={buyTarget} onClose={()=>setBuyTarget(null)} onSuccess={()=>{setBuyTarget(null);loadListings()}} />}
       {editTarget && <EditPriceModal listing={editTarget} onClose={()=>setEditTarget(null)} onSuccess={()=>{setEditTarget(null);loadListings()}} />}
-      {listingCard && <ListModal card={listingCard} walletAddress={address} walletClient={walletClient} onClose={()=>setListingCard(null)} onListed={()=>{setListingCard(null);loadListings()}} />}
+      {listingCard && (
+        <>
+          {typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches ? (
+            <SellSheet card={listingCard} walletAddress={address} walletClient={walletClient} onClose={()=>setListingCard(null)} onListed={()=>{setListingCard(null);loadListings()}} />
+          ) : (
+            <ListModal card={listingCard} walletAddress={address} walletClient={walletClient} onClose={()=>setListingCard(null)} onListed={()=>{setListingCard(null);loadListings()}} />
+          )}
+        </>
+      )}
       {bulkModal && bulkCards.length>0 && <BulkListModal cards={bulkCards} walletAddress={address} onClose={()=>setBulkModal(false)} onDone={()=>{setBulkModal(false);setSelectMode(false);setBulkSelected(new Set());loadListings()}} />}
     </div>
   )
