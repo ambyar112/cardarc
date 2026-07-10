@@ -1,8 +1,6 @@
-// Shared ListModal — dipakai di Collection dan Profile
-// SECURITY FIX: Removed selfMintCard (contract no longer has selfMint).
-//               Cards must be minted via mintCardNFT (approved minter flow).
-//               Wallet address normalized to lowercase before DB writes.
-import { useState } from 'react'
+// Shared ListModal — dipakai di Collection marketplace, Profile
+// DEBUG: if modal opens blank/white, this mount log will appear in console.
+import { useState, useEffect } from 'react'
 import { saveListingToSupabase } from '../lib/supabase'
 import { getTokenId, isMarketplaceApproved, approveMarketplace, listCard, checkNFTBalance } from '../lib/marketplace'
 import { mintCardNFT } from '../lib/mint'
@@ -10,6 +8,11 @@ import { mintCardNFT } from '../lib/mint'
 const TIER_COLORS = { legendary: '#f5c84c', epic: '#a78bfa', rare: '#16e6ff', common: '#9aa3b2' }
 
 export default function ListModal({ card, walletAddress, walletClient, onClose, onListed }) {
+  console.log('[ListModal] mount card=', card ? { id: card?.id, name: card?.name, tier: card?.tier, setId: card?.setId } : null)
+  useEffect(() => {
+    console.log('[ListModal] render step=', step, 'card=?', !!card)
+  }, [step, card])
+
   const [price, setPrice]   = useState('')
   const [step, setStep]     = useState('form') // form | minting | approving | listing | done | error
   const [errorMsg, setErrorMsg] = useState('')
