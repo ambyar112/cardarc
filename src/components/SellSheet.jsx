@@ -60,12 +60,13 @@ export default function SellSheet({ card, walletAddress, walletClient, onClose, 
     }
   }
 
-  if (!card || !card.id) {
+  if (!card || !card.id || !card.name) {
     return (
-      <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4" onClick={onClose}>
         <div className="relative rounded-2xl overflow-hidden w-full max-w-md p-6" style={{ background:'#0f1420', border:'1px solid rgba(255,255,255,.1)' }}>
           <p className="font-mono text-xs mb-2" style={{ color:'#ff6b6b' }}>Data kartu tidak valid untuk listing.</p>
-          <button onClick={onClose} className="mt-4 px-6 py-2 rounded-xl font-mono text-xs" style={{ background:'rgba(255,255,255,.1)', color:'#eef2ff' }}>Close</button>
+          <p className="font-mono text-[10px] mb-4" style={{ color:'#6b7280' }}>{card ? JSON.stringify(card).slice(0,120) : 'null card'}</p>
+          <button onClick={onClose} className="px-6 py-2 rounded-xl font-mono text-xs" style={{ background:'rgba(255,255,255,.1)', color:'#eef2ff' }}>Close</button>
         </div>
       </div>
     )
