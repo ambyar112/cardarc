@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://xswquwhtulshrvwkyjqu.supabase.co'
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhzd3F1d2h0dWxzaHJ2d2t5anF1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDc0NjI1MSwiZXhwIjoyMDk2MzIyMjUxfQ.PLACEHOLDER_SERVICE_ROLE_KEY'
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseServiceKey) {
+  console.error('Missing SUPABASE_SERVICE_ROLE_KEY')
+}
 
 const sellers = [
   '0x1234567890123456789012345678901234567890',
