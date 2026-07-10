@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { saveListingToSupabase } from '../lib/supabase'
 import { getTokenId, isMarketplaceApproved, approveMarketplace, listCard, checkNFTBalance } from '../lib/marketplace'
 import { mintCardNFT } from '../lib/mint'
+import useMobileSafeModal from '../hooks/useMobileSafeModal'
 
 const TIER_COLORS = { legendary: '#f5c84c', epic: '#a78bfa', rare: '#16e6ff', common: '#9aa3b2' }
 
@@ -19,6 +20,13 @@ export default function ListModal({ card, walletAddress, walletClient, onClose, 
   const [txHash, setTxHash] = useState('')
 
   const tierColor = TIER_COLORS[card?.tier] || '#9aa3b2'
+
+  const [isMobile, setIsMobile] = useState(false)
+  useMobileSafeModal(!!card && !!card.id)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    setIsMobile(window.matchMedia('(max-width: 768px)').matches)
+  }, [])
 
   // Validate price input — reject negative, zero, and absurdly large values
   function validatePrice(val) {
@@ -182,7 +190,7 @@ export default function ListModal({ card, walletAddress, walletClient, onClose, 
 
   return (
     <div
-      className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+      className={`fixed inset-0 flex items-center justify-center p-4 ${isMobile ? 'z-[65] bg-black/95' : 'z-[70] bg-black/90 backdrop-blur-md'}`}
       onClick={onClose}
     >
       <div

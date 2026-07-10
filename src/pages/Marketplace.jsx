@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
+import useAutoDismissWalletModal from '../hooks/useAutoDismissWalletModal'
+
 import { useAccount, useWalletClient } from 'wagmi'
 import { getActiveListingsFromSupabase, getMarketplaceHistory,
          markListingSold, markListingCancelled, saveListingToSupabase,
@@ -326,6 +328,7 @@ export default function Marketplace() {
   const [sellTierFilter, setSellTierFilter] = useState('all')
   const [sellGameFilter, setSellGameFilter] = useState('all')
   const [listingCard, setListingCard]   = useState(null)
+  useAutoDismissWalletModal(!!listingCard, { delay: 50 })
   const [bulkSelected, setBulkSelected] = useState(new Set())
   const [bulkModal, setBulkModal]       = useState(false)
   const [selectMode, setSelectMode]     = useState(false)
