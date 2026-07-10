@@ -168,7 +168,17 @@ export default function ListModal({ card, walletAddress, walletClient, onClose, 
     }
   }
 
-  if (!card) return null
+  if (!card || !card.id) {
+    return (
+      <div className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-md flex items-center justify-center p-4" onClick={onClose}>
+        <div className="relative rounded-2xl overflow-hidden w-full max-w-md p-6" style={{ background:'#0f1420', border:'1px solid rgba(255,255,255,.1)' }}>
+          <p className="font-mono text-xs mb-2" style={{ color:'#ff6b6b' }}>Data kartu tidak valid untuk listing.</p>
+          <p className="font-mono text-[10px]" style={{ color:'#9aa3b2' }}>Coba tutup dan buka lagi dari kartu yang sama.</p>
+          <button onClick={onClose} className="mt-4 px-6 py-2 rounded-xl font-mono text-xs" style={{ background:'rgba(255,255,255,.1)', color:'#eef2ff' }}>Close</button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
