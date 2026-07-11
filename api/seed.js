@@ -24,62 +24,53 @@ const sampleListings = [
 ]
 
 export default async function handler(req, res) {
-  // Get API key from environment (must be set in Vercel)
   const expectedToken = process.env.SEED_API_KEY
-  
+
   if (!expectedToken) {
     console.error('SEED_API_KEY not configured')
     return res.status(500).json({ error: 'Server configuration error' })
   }
-  
+
   const authHeader = req.headers.authorization
   const providedToken = authHeader?.replace('Bearer ', '') || ''
-  
-  // Constant-time comparison to prevent timing attacks
+
   if (providedToken.length !== expectedToken.length) {
-    console.warn('Seed endpoint unauthorized attempt - invalid token length')
     return res.status(401).json({ error: 'Unauthorized' })
   }
-  
-  // Use crypto.timingSafeEqual for constant-time comparison
-  const expectedBuffer = Buffer.from(expectedToken, 'utf8')
-  const providedBuffer = Buffer.from(providedToken, 'utf8')
-  
+
   try {
     const crypto = await import('crypto')
+    const expectedBuffer = Buffer.from(expectedToken, 'utf8')
+    const providedBuffer = Buffer.from(providedToken, 'utf8')
     if (!crypto.timingSafeEqual(expectedBuffer, providedBuffer)) {
-      console.warn('Seed endpoint unauthorized attempt - invalid token')
       return res.status(401).json({ error: 'Unauthorized' })
     }
-  } catch (err) {
-    console.warn('Seed endpoint unauthorized attempt - comparison failed')
+  } catch {
     return res.status(401).json({ error: 'Unauthorized' })
   }
-  
-  console.log('Seed endpoint accessed successfully')
-  try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false }
-    })
 
+  console.log('Seed endpoint accessed successfully')
+
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false }
+  })
+
+  try {
     const profiles = sellers.map(wallet => ({
       wallet: wallet.toLowerCase(),
-      username: `seller_${wallet.slice(2, 8)}`,
+      username: 'seller_' + wallet.slice(2, 8),
       level: 10,
       legendary_count: 5
     }))
 
-    // Upsert profiles using service_role (bypass RLS)
     const { error: profileError } = await supabase
       .from('profiles')
       .upsert(profiles, { onConflict: 'wallet', count: 'exact' })
 
-    if (profileError) throw new Error(`Profile error: ${profileError.message}`)
+    if (profileError) throw new Error('Profile error: ' + profileError.message)
 
-    // Insert marketplace listings - only columns confirmed to exist
-    const { data: marketResult, error: insertError } = await supabase
-      .from('marketplace_listings')
-      .insert(sampleListings.map(l => ({
+    const insertData = sampleListings.map(function(l) {
+      return {
         seller: l.seller,
         card_id: l.card_id,
         card_name: l.card_name,
@@ -87,14 +78,19 @@ export default async function handler(req, res) {
         tier: l.tier,
         set_id: l.set_id,
         status: l.status || 'active'
-      })), { count: 'exact' })
+      }
+    })
 
-    if (insertError) throw new Error(`Insert error: ${insertError.message}`)
+    const { data: marketResult, error: insertError } = await supabase
+      .from('marketplace_listings')
+      .insert(insertData, { count: 'exact' })
+
+    if (insertError) throw new Error('Insert error: ' + insertError.message)
 
     return res.status(200).json({
       success: true,
       profiles_created: profiles.length,
-      listings_created: marketResult?.length || sampleListings.length,
+      listings_created: marketResult ? marketResult.length : sampleListings.length,
       message: 'Marketplace seeded successfully!'
     })
   } catch (error) {
