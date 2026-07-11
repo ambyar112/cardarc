@@ -27,7 +27,6 @@ export default async function handler(req, res) {
   const expectedToken = process.env.SEED_API_KEY
 
   if (!expectedToken) {
-    console.error('SEED_API_KEY not configured')
     return res.status(500).json({ error: 'Server configuration error' })
   }
 
@@ -49,8 +48,6 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  console.log('Seed endpoint accessed successfully')
-
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false }
   })
@@ -69,21 +66,22 @@ export default async function handler(req, res) {
 
     if (profileError) throw new Error('Profile error: ' + profileError.message)
 
-    const insertData = sampleListings.map(function(l) {
+    const insertData = sampleListings.map(function(l, idx) {
       return {
+        listing_id: idx + 1,
         seller: l.seller,
         card_id: l.card_id,
         card_name: l.card_name,
         card_img: l.card_img,
         tier: l.tier,
-        set_id: l.set_id,
-        status: l.status || 'active'
+        token_id: idx + 1,
+        price: parseFloat((l.price_usdc || 1).toString())
       }
     })
 
     const { data: marketResult, error: insertError } = await supabase
       .from('marketplace_listings')
-      .insert(insertData, { count: 'exact' })
+      .upsert(insertData, { onConflict: 'listing_id', count: 'exact' })
 
     if (insertError) throw new Error('Insert error: ' + insertError.message)
 
