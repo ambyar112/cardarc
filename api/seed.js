@@ -76,10 +76,18 @@ export default async function handler(req, res) {
 
     if (profileError) throw new Error(`Profile error: ${profileError.message}`)
 
-    // Insert marketplace listings
+    // Insert marketplace listings - only columns confirmed to exist
     const { data: marketResult, error: insertError } = await supabase
       .from('marketplace_listings')
-      .insert(sampleListings, { count: 'exact' })
+      .insert(sampleListings.map(l => ({
+        seller: l.seller,
+        card_id: l.card_id,
+        card_name: l.card_name,
+        card_img: l.card_img,
+        tier: l.tier,
+        set_id: l.set_id,
+        status: l.status || 'active'
+      })), { count: 'exact' })
 
     if (insertError) throw new Error(`Insert error: ${insertError.message}`)
 
