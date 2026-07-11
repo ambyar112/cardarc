@@ -464,22 +464,11 @@ export default function Gacha() {
           let nftTokenId = null
           try {
             if (!walletClient) throw new Error('Wallet client not ready for signed mint')
-            // If a wallet modal appeared after pool load, surface a clearer error on first failure
             await dismissWalletModal()
             nftTokenId = await mintCardNFT(address, card, walletClient)
             console.log('✅ Minted NFT tokenId:', nftTokenId)
           } catch (e) {
-            console.warn('Mint failed, saving collection without tokenId:', e.message)
-          }
-
-          // Save to collection with authenticated API (prevents wallet impersonation)
-          if (walletClient) {
-            try {
-              await api.addToCollection(walletClient, [{ ...card, nftTokenId }])
-              console.log('✅ Collection saved via authenticated API')
-            } catch (e) {
-              console.warn('Authenticated addToCollection failed:', e.message)
-            }
+            console.warn('Mint failed:', e.message)
           }
         }
       } else {
