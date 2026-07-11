@@ -57,12 +57,11 @@ export default async function handler(req, res) {
   }
   
   console.log('Seed endpoint accessed successfully')
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false }
-  })
-
   try {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false }
+    })
+
     const profiles = sellers.map(wallet => ({
       wallet: wallet.toLowerCase(),
       username: `seller_${wallet.slice(2, 8)}`,
@@ -70,21 +69,24 @@ export default async function handler(req, res) {
       legendary_count: 5
     }))
 
-    // Use SECURITY DEFINER RPC functions to bypass RLS
-    const { data: profileResult, error: profileError } = await supabase
-      .rpc('seed_profiles', { profiles_data: profiles })
+    // Upsert profiles using service_role (bypass RLS)
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert(profiles, { onConflict: 'wallet', count: 'exact' })
 
     if (profileError) throw new Error(`Profile error: ${profileError.message}`)
 
+    // Insert marketplace listings
     const { data: marketResult, error: insertError } = await supabase
-      .rpc('seed_marketplace', { listings_data: sampleListings })
+      .from('marketplace_listings')
+      .insert(sampleListings, { count: 'exact' })
 
     if (insertError) throw new Error(`Insert error: ${insertError.message}`)
 
     return res.status(200).json({
       success: true,
-      profiles_created: profileResult?.[0]?.profiles_created || profiles.length,
-      listings_created: marketResult?.[0]?.listings_created || sampleListings.length,
+      profiles_created: profiles.length,
+      listings_created: marketResult?.length || sampleListings.length,
       message: 'Marketplace seeded successfully!'
     })
   } catch (error) {
