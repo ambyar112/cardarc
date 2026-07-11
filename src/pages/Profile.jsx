@@ -41,7 +41,8 @@ export default function Profile() {
   useEffect(() => {
     if (!isConnected || !address) { setLoading(false); return }
     let isMounted = true
-    console.log('[PROFILE][DEPLOY_MARKER] load start', new Date().toISOString())
+    async function load() {
+      console.log('[PROFILE][DEPLOY_MARKER] load start', new Date().toISOString())
       if (isMounted) setLoading(true)
       try {
         const [collection, pullLog, board] = await Promise.all([
