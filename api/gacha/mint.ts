@@ -1,22 +1,3 @@
-/**
- * GACHA MINT BACKEND - DIRECT MINT (SIMPLE & SECURE)
- *
- * Backend endpoint that:
- *   1. Verifies user actually pulled gacha (checks gacha_log table)
- *   2. Uses DEPLOYER wallet to call mintCard() directly
- *   3. Returns tokenId to frontend
- *
- * This is SIMPLER than signature-based approach and works immediately!
- * User never calls blockchain directly - backend does everything.
- *
- * Environment variables required:
- *   SUPABASE_URL - Service role URL
- *   SUPABASE_SERVICE_KEY - Service role key (admin access)
- *   DEPLOYER_PRIVATE_KEY - Deployer/owner private key
- *   VITE_CONTRACT_ADDRESS - ArcCards contract address
- *   ARC_RPC_URL - ARC testnet RPC (https://rpc.testnet.arc.network)
- */
-
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import { withAuth } from '../_middleware/auth.js';
@@ -28,7 +9,6 @@ const CONTRACT_ADDRESS = process.env.VITE_CONTRACT_ADDRESS || process.env.ARC_CA
 const ARC_RPC_URL = process.env.ARC_RPC_URL || 'https://rpc.testnet.arc.network';
 const CHAIN_ID = parseInt(process.env.CHAIN_ID || '5042002');
 
-// Lazy config — never throw at module load (avoids FUNCTION_INVOCATION_FAILED)
 function getMintConfig() {
   const missing: string[] = [];
   if (!SUPABASE_URL) missing.push('SUPABASE_URL');
@@ -38,15 +18,14 @@ function getMintConfig() {
   return { ok: missing.length === 0, missing };
 }
 
-// Admin Supabase client (may be unconfigured until env is set)
 const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_KEY)
   ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
   : null as any;
 
-// ArcCards ABI (minimal - just what we need)
 const ARC_CARDS_ABI = [
   'function mintCard(address to, string calldata cardId) external',
   'function cardToTokenId(string calldata cardId) external view returns (uint256)',
+  'function balanceOf(address account, uint256 tokenId) external view returns (uint256)',
 ];
 
 interface MintResponse {
@@ -60,29 +39,65 @@ function isValidAddress(address: string): boolean {
   return /^0x[0-9a-fA-F]{40}$/.test(address);
 }
 
-async function updateCollectionTokenId(
+async function upsertCollectionRecord(
   wallet: string,
   cardId: string,
-  tokenId: number
+  tokenId: number,
+  tier: string,
+  set_id: string
 ): Promise<boolean> {
-  const { error } = supabaseAdmin
+  const cardNameMap: Record<string, string> = {
+    'swsh8-123': 'Pikachu VMAX',
+    'sv02-087': 'Charizard ex',
+    'ygo-89631139': 'Blue-Eyes White Dragon',
+    'ygo-46986414': 'Dark Magician',
+    'dbs-bt1-001': 'Son Goku',
+  };
+
+  const imgMap: Record<string, string> = {
+    'swsh8-123': 'https://assets.tcgdex.net/en/swsh/swsh8/123/high.webp',
+    'sv02-087': 'https://assets.tcgdex.net/en/sv/sv02/087/high.webp',
+    'ygo-89631139': 'https://images.ygoprodeck.com/images/cards/89631139.jpg',
+    'ygo-46986414': 'https://images.ygoprodeck.com/images/cards/46986414.jpg',
+    'dbs-bt1-001': 'https://www.dbs-cardgame.com/fw/images/cards/card/en/BT1-001_f.webp',
+  };
+
+  const cardName = cardNameMap[cardId] || cardId;
+  const cardImg = imgMap[cardId] || 'https://cardarc.vercel.app/favicon.svg';
+  const safeTier = ['legendary','epic','rare','common'].includes(tier) ? tier : 'common';
+  const safeSet = ['pokemon','yugioh','dragonball'].includes(set_id) ? set_id : 'pokemon';
+
+  const { error } = await supabaseAdmin
     .from('collection')
-    .update({ nft_token_id: tokenId })
-    .eq('wallet', wallet.toLowerCase())
-    .eq('card_id', cardId)
-    .is('nft_token_id', null);
+    .upsert(
+      {
+        wallet: wallet.toLowerCase(),
+        card_id: cardId,
+        card_name: cardName,
+        card_img: cardImg,
+        tier: safeTier,
+        set_id: safeSet,
+        nft_token_id: tokenId,
+        status: 'owned'
+      },
+      { onConflict: 'wallet,card_id', count: 'exact' }
+    );
 
   if (error) {
-    console.error('Collection update error:', error);
+    console.error('Collection upsert error:', error);
     return false;
   }
   return true;
 }
 
-/**
- * Main mint handler - wrapped with auth middleware
- * Accepts either cardId (string) or cardIds (string[]).
- */
+function normalizeCardId(raw: string): { cardId: string; tier: string; set_id: string } {
+  const c = raw.toLowerCase();
+  if (c.startsWith('ygo-')) return { cardId: c, tier: 'epic', set_id: 'yugioh' };
+  if (c.startsWith('dbs-')) return { cardId: c, tier: 'rare', set_id: 'dragonball' };
+  if (c.includes('vmax') || c.includes('ex') || c.includes('legendary')) return { cardId: c, tier: 'legendary', set_id: 'pokemon' };
+  return { cardId: c, tier: 'common', set_id: 'pokemon' };
+}
+
 const handler = async (wallet: string, body: any): Promise<Response> => {
   try {
     const cfg = getMintConfig();
@@ -143,16 +158,19 @@ const handler = async (wallet: string, body: any): Promise<Response> => {
     const contract = new ethers.Contract(CONTRACT_ADDRESS!, ARC_CARDS_ABI, signer);
 
     const results: MintResponse[] = [];
-    for (const cardId of cardIds) {
+    for (let i = 0; i < cardIds.length; i++) {
+      const cardId = cardIds[i];
+      const { cardId: normCardId, tier, set_id } = normalizeCardId(cardId);
+
       let existingTokenId: number | null = null;
       try {
-        const tid = await contract.cardToTokenId(cardIds[0]);
+        const tid = await contract.cardToTokenId(cardId);
         const tokenIdNum = Number(tid);
         if (tokenIdNum > 0) {
           try {
             const balanceNum = Number(await contract.balanceOf(wallet, tokenIdNum));
             if (balanceNum > 0) {
-              await updateCollectionTokenId(wallet, cardIds[0], tokenIdNum);
+              await upsertCollectionRecord(wallet, cardId, tokenIdNum, tier, set_id);
               results.push({ success: true, tokenId: tokenIdNum });
               continue;
             }
@@ -165,7 +183,7 @@ const handler = async (wallet: string, body: any): Promise<Response> => {
       }
 
       try {
-        const tx = await contract.mintCard(wallet, cardIds[0], { gasLimit: 500000 });
+        const tx = await contract.mintCard(wallet, cardId, { gasLimit: 500000 });
         const receipt = await tx.wait();
         if (receipt.status !== 1) {
           results.push({ success: false, reason: 'Transaction failed' });
@@ -173,7 +191,7 @@ const handler = async (wallet: string, body: any): Promise<Response> => {
         }
         let tokenId = 0;
         try { tokenId = Number(await contract.cardToTokenId(cardId)); } catch {}
-        await updateCollectionTokenId(wallet, cardIds[0], tokenId);
+        await upsertCollectionRecord(wallet, cardId, tokenId, tier, set_id);
         results.push({ success: true, tokenId, txHash: receipt.hash });
       } catch (e: any) {
         results.push({ success: false, reason: e?.message || 'mint reverted' });
@@ -195,8 +213,5 @@ const handler = async (wallet: string, body: any): Promise<Response> => {
   }
 };
 
-export default withAuth(handler)
-
-export const config = {
-  runtime: 'edge',
-};
+export default withAuth(handler);
+export const config = { runtime: 'edge' };
