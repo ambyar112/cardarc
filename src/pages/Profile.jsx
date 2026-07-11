@@ -43,34 +43,39 @@ export default function Profile() {
     let isMounted = true
     async function load() {
       if (isMounted) setLoading(true)
-      const [collection, pullLog, board] = await Promise.all([
-        walletClient ? api.getMyCollection(walletClient, address).then(r => r?.data || []).catch(() => getCollection(address)) : getCollection(address),
-        getGachaLog(address, 10),
-        getRealLeaderboard(),
-      ])
-      if (!isMounted) return
-      const profile = board.find(p => p.wallet?.toLowerCase() === address.toLowerCase())
-      setUsername(profile?.username || '')
-      setCards(collection.map(c => ({
-        id: c.card_id, name: c.card_name, img: c.card_img, tier: c.tier,
-        setId: c.set_id, localId: c.local_id, hp: c.hp, types: c.types,
-        rarity: c.rarity, atk: c.atk, def: c.def, level: c.level,
-        power: c.set_id === 'dragonball' ? c.hp : null,
-        color: c.set_id === 'dragonball' ? c.types : null,
-      })))
-      setStats({
-        total:     collection.length,
-        legendary: collection.filter(c => c.tier === 'legendary').length,
-        epic:      collection.filter(c => c.tier === 'epic').length,
-        rare:      collection.filter(c => c.tier === 'rare').length,
-        pokemon:   collection.filter(c => !['yugioh','dragonball'].includes(c.set_id)).length,
-        yugioh:    collection.filter(c => c.set_id === 'yugioh').length,
-        dbs:       collection.filter(c => c.set_id === 'dragonball').length,
-        totalPulls: profile?.totalPulls || 0,
-        rank:      board.findIndex(p => p.wallet?.toLowerCase() === address.toLowerCase()) + 1 || '—',
-      })
-      setLog(pullLog)
-      setLoading(false)
+      try {
+        const [collection, pullLog, board] = await Promise.all([
+          walletClient ? api.getMyCollection(walletClient, address).then(r => r?.data || []).catch(() => getCollection(address)) : getCollection(address),
+          getGachaLog(address, 10).catch(() => []),
+          getRealLeaderboard().catch(() => []),
+        ])
+        if (!isMounted) return
+        const profile = board.find(p => p.wallet?.toLowerCase() === address.toLowerCase())
+        setUsername(profile?.username || '')
+        setCards(collection.map(c => ({
+          id: c.card_id, name: c.card_name, img: c.card_img, tier: c.tier,
+          setId: c.set_id, localId: c.local_id, hp: c.hp, types: c.types,
+          rarity: c.rarity, atk: c.atk, def: c.def, level: c.level,
+          power: c.set_id === 'dragonball' ? c.hp : null,
+          color: c.set_id === 'dragonball' ? c.types : null,
+        })))
+        setStats({
+          total:     collection.length,
+          legendary: collection.filter(c => c.tier === 'legendary').length,
+          epic:      collection.filter(c => c.tier === 'epic').length,
+          rare:      collection.filter(c => c.tier === 'rare').length,
+          pokemon:   collection.filter(c => !['yugioh','dragonball'].includes(c.set_id)).length,
+          yugioh:    collection.filter(c => c.set_id === 'yugioh').length,
+          dbs:       collection.filter(c => c.set_id === 'dragonball').length,
+          totalPulls: profile?.totalPulls || 0,
+          rank:      board.findIndex(p => p.wallet?.toLowerCase() === address.toLowerCase()) + 1 || '—',
+        })
+        setLog(pullLog)
+      } catch (e) {
+        console.error('Profile load error:', e)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
     }
     load()
     return () => { isMounted = false }
@@ -465,7 +470,6 @@ export default function Profile() {
           onClose={() => setListingCard(null)}
           onListed={() => setListingCard(null)}
         />)}
-      )}
     </div>
   )
 }
