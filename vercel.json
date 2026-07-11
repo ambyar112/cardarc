@@ -1,69 +1,9 @@
 {
-  "buildCommand": "npm run build npm run buildnpm run build echo FORCE_REBUILD",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install --legacy-peer-deps",
   "framework": "vite",
   "rewrites": [
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/",
-      "headers": [
-        {
-          "key": "Link",
-          "value": "</sitemap.xml>; rel=\"sitemap\", </robots.txt>; rel=\"robots\""
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), payment=()"
-        },
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains; preload"
-        },
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://fonts.reown.com; img-src 'self' data: blob: https://assets.tcgdex.net https://images.ygoprodeck.com https://www.dbs-cardgame.com https://api.web3modal.org https://walletconnect.org https://raw.githubusercontent.com https://exburst.dev https://optcgapi.com https://digimoncard.io https://i.imgur.com; connect-src 'self' https://xswquwhtulshrvwkyjqu.supabase.co wss://xswquwhtulshrvwkyjqu.supabase.co https://rpc.testnet.arc.network https://sepolia.base.org https://mainnet.base.org https://base-sepolia.public.blastapi.io https://base.public.blastapi.io https://base-sepolia-rpc.publicnode.com https://base-rpc.publicnode.com https://secure.walletconnect.org https://pulse.walletconnect.org https://api.web3modal.org https://relay.walletconnect.org https://rpc.walletconnect.org https://db.ygoprodeck.com https://assets.tcgdex.net https://api.tcgdex.net https://raw.githubusercontent.com https://www.dbs-cardgame.com https://api.deckplanet.net https://digimoncard.io https://optcgapi.com https://exburst.dev https://cca-lite.coinbase.com wss://relay.walletconnect.org wss://rpc.walletconnect.org; worker-src blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';"
-        }
-      ]
-    }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
