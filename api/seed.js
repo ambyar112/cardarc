@@ -16,11 +16,11 @@ const sellers = [
 ]
 
 const sampleListings = [
-  { on_chain_listing_id: 1, seller: sellers[0], card_id: 'swsh8-123', card_name: 'Pikachu VMAX', card_img: 'https://assets.tcgdex.net/en/swsh/swsh8/123/high.webp', tier: 'legendary', set_id: 'pokemon', price_usdc: 50.00, status: 'active' },
-  { on_chain_listing_id: 2, seller: sellers[1], card_id: 'ygo-89631139', card_name: 'Blue-Eyes White Dragon', card_img: 'https://images.ygoprodeck.com/images/cards/89631139.jpg', tier: 'epic', set_id: 'yugioh', price_usdc: 35.50, status: 'active' },
-  { on_chain_listing_id: 3, seller: sellers[2], card_id: 'dbs-bt1-001', card_name: 'Son Goku', card_img: 'https://www.dbs-cardgame.com/fw/images/cards/card/en/BT1-001_f.webp', tier: 'rare', set_id: 'dragonball', price_usdc: 25.00, status: 'active' },
-  { on_chain_listing_id: 4, seller: sellers[3], card_id: 'sv02-087', card_name: 'Charizard ex', card_img: 'https://assets.tcgdex.net/en/sv/sv02/087/high.webp', tier: 'legendary', set_id: 'pokemon', price_usdc: 75.00, status: 'active' },
-  { on_chain_listing_id: 5, seller: sellers[4], card_id: 'ygo-46986414', card_name: 'Dark Magician', card_img: 'https://images.ygoprodeck.com/images/cards/46986414.jpg', tier: 'epic', set_id: 'yugioh', price_usdc: 40.00, status: 'active' }
+  { seller: sellers[0], card_id: 'swsh8-123', card_name: 'Pikachu VMAX', card_img: 'https://assets.tcgdex.net/en/swsh/swsh8/123/high.webp', tier: 'legendary', set_id: 'pokemon', price_usdc: 50.00, status: 'active' },
+  { seller: sellers[1], card_id: 'ygo-89631139', card_name: 'Blue-Eyes White Dragon', card_img: 'https://images.ygoprodeck.com/images/cards/89631139.jpg', tier: 'epic', set_id: 'yugioh', price_usdc: 35.50, status: 'active' },
+  { seller: sellers[2], card_id: 'dbs-bt1-001', card_name: 'Son Goku', card_img: 'https://www.dbs-cardgame.com/fw/images/cards/card/en/BT1-001_f.webp', tier: 'rare', set_id: 'dragonball', price_usdc: 25.00, status: 'active' },
+  { seller: sellers[3], card_id: 'sv02-087', card_name: 'Charizard ex', card_img: 'https://assets.tcgdex.net/en/sv/sv02/087/high.webp', tier: 'legendary', set_id: 'pokemon', price_usdc: 75.00, status: 'active' },
+  { seller: sellers[4], card_id: 'ygo-46986414', card_name: 'Dark Magician', card_img: 'https://images.ygoprodeck.com/images/cards/46986414.jpg', tier: 'epic', set_id: 'yugioh', price_usdc: 40.00, status: 'active' }
 ]
 
 export default async function handler(req, res) {
