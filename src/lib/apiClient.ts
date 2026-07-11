@@ -233,11 +233,17 @@ export const api = {
     }));
     return callAuthenticatedAPI(walletClient, '/api/collection/add', { cards: normalized });
   },
-};
 
-/**
- * Type definitions
- */
+  async getMyCollection(walletClient: WalletClient | undefined, wallet: string) {
+    return callAuthenticatedAPI(walletClient, '/api/collection', { wallet });
+  },
+
+  async getMyProfile(walletClient: WalletClient | undefined, wallet: string) {
+    return callAuthenticatedAPI(walletClient, '/api/profile', { wallet });
+  },
+} as const;
+
+/** Type definitions */
 export interface AuthenticatedAPIOptions {
   walletClient: WalletClient;
   endpoint: string;

@@ -44,7 +44,7 @@ export default function Profile() {
     async function load() {
       if (isMounted) setLoading(true)
       const [collection, pullLog, board] = await Promise.all([
-        getCollection(address),
+        walletClient ? api.getMyCollection(walletClient, address).then(r => r?.data || []).catch(() => getCollection(address)) : getCollection(address),
         getGachaLog(address, 10),
         getRealLeaderboard(),
       ])
@@ -74,7 +74,7 @@ export default function Profile() {
     }
     load()
     return () => { isMounted = false }
-  }, [isConnected, address])
+  }, [isConnected, address, walletClient])
 
   async function saveUsername() {
     // ✅ FIX VULN-07: Strict allowlist validation — only alphanumeric, underscore, dash

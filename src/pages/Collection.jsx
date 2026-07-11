@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
+import { getCollection, getGachaLog, upsertProfile, getRealLeaderboard, getMyCollection, getMyProfile } from '../lib/supabase'
 import { useAccount, useWalletClient } from 'wagmi'
 import CardItem from '../components/CardItem'
 import ListModal from '../components/ListModal'
 import BulkListModal from '../components/BulkListModal'
-import { getCollection } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
 const PER     = 24
@@ -30,35 +30,52 @@ export default function Collection() {
   useEffect(() => {
     async function load() {
       setLoading(true)
-      if (isConnected && address) {
-        const saved = await getCollection(address)
-        if (saved.length > 0) {
-          setCards(saved.map(c => ({
-            id:       c.card_id,
-            name:     c.card_name,
-            img:      c.card_img,
-            tier:     c.tier,
-            setId:    c.set_id,
-            localId:  c.local_id,
-            hp:       c.hp,
-            types:    c.types,
-            rarity:   c.rarity,
-            atk:      c.atk,
-            def:      c.def,
-            level:    c.level,
-            power:    c.set_id === 'dragonball' ? c.hp    : null,
-            color:    c.set_id === 'dragonball' ? c.types : null,
-            cardType: c.set_id === 'dragonball' ? c.rarity: null,
-          })))
-          setLoading(false)
-          return
-        }
+      if (!isConnected || !address) {
+        setCards([])
+        setLoading(false)
+        return
       }
-      setCards([])
+
+      let collection = []
+      if (walletClient) {
+        try {
+          const result = await api.getMyCollection(walletClient, address)
+          if (result?.success && Array.isArray(result.data)) {
+            collection = result.data
+          }
+        } catch (e) {
+          console.warn('Authenticated collection read failed, fallback to Supabase direct', e.message)
+          collection = await getCollection(address)
+        }
+      } else {
+        collection = await getCollection(address)
+      }
+
+      if (collection.length > 0) {
+        setCards(collection.map(c => ({
+          id:       c.card_id,
+          name:     c.card_name,
+          img:      c.card_img,
+          tier:     c.tier,
+          setId:    c.set_id,
+          localId:  c.local_id,
+          hp:       c.hp,
+          types:    c.types,
+          rarity:   c.rarity,
+          atk:      c.atk,
+          def:      c.def,
+          level:    c.level,
+          power:    c.set_id === 'dragonball' ? c.hp    : null,
+          color:    c.set_id === 'dragonball' ? c.types : null,
+          cardType: c.set_id === 'dragonball' ? c.rarity: null,
+        })))
+      } else {
+        setCards([])
+      }
       setLoading(false)
     }
     load()
-  }, [isConnected, address])
+  }, [isConnected, address, walletClient])
 
   // Exit select mode clears selection
   function toggleSelectMode() {

@@ -62,6 +62,37 @@ export async function getCollection(wallet) {
   return data || []
 }
 
+/**
+ * Authenticated collection read (bypasses RLS issues by using backend service_role).
+ * @param {import('viem').WalletClient} walletClient
+ * @param {string} wallet
+ */
+export async function getMyCollection(walletClient, wallet) {
+  try {
+    const result = await callAuthenticatedAPI(walletClient, '/api/collection', { wallet: normalizeWallet(wallet) })
+    if (result?.success && Array.isArray(result.data)) return result.data
+    return []
+  } catch (e) {
+    console.error('getMyCollection error:', e)
+    return []
+  }
+}
+
+/**
+ * Authenticated profile read.
+ * @param {import('viem').WalletClient} walletClient
+ * @param {string} wallet
+ */
+export async function getMyProfile(walletClient, wallet) {
+  try {
+    const result = await callAuthenticatedAPI(walletClient, '/api/profile', { wallet: normalizeWallet(wallet) })
+    return result?.data || null
+  } catch (e) {
+    console.error('getMyProfile error:', e)
+    return null
+  }
+}
+
 export async function addToCollection(wallet, card, nftTokenId = null) {
   try {
     // Call backend API endpoint instead of direct Supabase
