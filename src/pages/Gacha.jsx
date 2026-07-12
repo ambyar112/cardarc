@@ -416,6 +416,10 @@ export default function Gacha() {
 
   async function summon(qty) {
     if (summoning) return
+    if (!isConnected || !address) {
+      setMintStatus('Connect wallet dulu sebelum summon.')
+      return
+    }
     setSummoning(true) // Race condition fix: immediate lock after guard check
 
     let pool = pools[selectedPack.id] || []
@@ -633,7 +637,7 @@ export default function Gacha() {
                       <div className="flex flex-col gap-2 mt-2" style={{ position: 'relative', zIndex: 30 }}>
                         <button
                           onClick={e => { e.stopPropagation(); e.preventDefault(); summon(1) }}
-                          disabled={loadingPacks[selectedPack.id] || summoning}
+                          disabled={loadingPacks[selectedPack.id] || summoning || !isConnected}
                           className="w-full h-12 border-none rounded-xl cursor-pointer transition-all duration-200 disabled:opacity-40 active:scale-95"
                           style={{
                             fontFamily: 'Orbitron, monospace', fontSize: 12, fontWeight: 800,
@@ -647,7 +651,7 @@ export default function Gacha() {
                         </button>
                         <button
                           onClick={e => { e.stopPropagation(); e.preventDefault(); summon(10) }}
-                          disabled={loadingPacks[selectedPack.id] || summoning}
+                          disabled={loadingPacks[selectedPack.id] || summoning || !isConnected}
                           className="w-full h-12 border-none rounded-xl cursor-pointer transition-all duration-200 disabled:opacity-40 active:scale-95"
                           style={{
                             fontFamily: 'Orbitron, monospace', fontSize: 12, fontWeight: 800,
@@ -666,7 +670,7 @@ export default function Gacha() {
                         )}
                         {!isConnected && (
                           <p className="font-mono text-[10px] text-center" style={{ color: `rgba(${pack.accentRgb},.7)` }}>
-                            Connect wallet to save
+                            Connect wallet to summon
                           </p>
                         )}
                       </div>

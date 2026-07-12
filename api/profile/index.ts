@@ -18,12 +18,11 @@ const handler = async (wallet: string): Promise<Response> => {
       )
     }
 
+    const targetWallet = (wallet || '').toLowerCase()
+
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .select('*')
-      .eq('wallet', wallet.toLowerCase())
-      .limit(1)
-      .maybeSingle()
 
     if (error) {
       return new Response(
@@ -32,8 +31,13 @@ const handler = async (wallet: string): Promise<Response> => {
       )
     }
 
+    let matched = data || null
+    if (targetWallet && Array.isArray(data)) {
+      matched = data.find((row) => String(row.wallet || '').toLowerCase() === targetWallet) || null
+    }
+
     return new Response(
-      JSON.stringify({ success: true, data: data || null }),
+      JSON.stringify({ success: true, data: matched }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     )
   } catch (error: any) {
