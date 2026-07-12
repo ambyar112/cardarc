@@ -345,7 +345,7 @@ export async function saveListingToSupabase(listing) {
   try {
     const safePrice = validatePrice(listing.priceEth)
     const safeOnChainId = validateOnChainId(listing.listingId)
-    const { error } = await supabase.from('marketplace_listings').insert({
+    const { error } = await supabase.from('marketplace').insert({
       on_chain_listing_id: safeOnChainId,
       seller:     normalizeWallet(listing.seller),
       card_id:    sanitizeText(listing.cardId, 100),
@@ -368,7 +368,7 @@ export async function saveListingToSupabase(listing) {
 
 export async function markListingSold(onChainListingId, buyerWallet) {
   await supabase
-    .from('marketplace_listings')
+     .from('marketplace')
     .update({ status: 'sold', buyer: normalizeWallet(buyerWallet) })
     .eq('on_chain_listing_id', validateOnChainId(onChainListingId))
     .eq('status', 'active')
@@ -384,17 +384,18 @@ export async function markListingCancelled(onChainListingId) {
 
 export async function getActiveListingsFromSupabase(limit = 50) {
   const { data } = await supabase
-    .from('marketplace_listings')
+    .from('marketplace')
     .select('*')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(Math.min(limit, 100))
-  return data || []
+  const rows = data || []
+  return rows.map(r => ({...r, price: r.price_usdc, active: r.status==='active', listing_id: r.on_chain_listing_id ?? r.id }))
 }
 
 export async function getMarketplaceHistory(limit = 30) {
   const { data } = await supabase
-    .from('marketplace_listings')
+    .from('marketplace')
     .select('*')
     .in('status', ['sold', 'cancelled'])
     .order('created_at', { ascending: false })
@@ -404,10 +405,11 @@ export async function getMarketplaceHistory(limit = 30) {
 
 export async function getMyListings(wallet) {
   const { data } = await supabase
-    .from('marketplace_listings')
+    .from('marketplace')
     .select('*')
     .eq('seller', normalizeWallet(wallet))
     .eq('status', 'active')
     .order('created_at', { ascending: false })
-  return data || []
+  const rows = data || []
+  return rows.map(r => ({...r, price: r.price_usdc, active: r.status==='active', listing_id: r.on_chain_listing_id ?? r.id }))
 }
