@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
   try {
     const { data, error } = await supabase
-      .from('marketplace_listings')
+      .from('marketplace')
       .select('*')
       .order('created_at', { ascending: false });
 

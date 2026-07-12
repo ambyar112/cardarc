@@ -380,16 +380,17 @@ export default function Marketplace() {
       console.log('No on-chain listings found, falling back to Supabase cache')
       const sbData = await getActiveListingsFromSupabase(50)
       if (sbData && sbData.length > 0) {
-        // Convert Supabase format to match on-chain format
         const supabaseListings = sbData.map(s => ({
-          listingId: s.on_chain_listing_id || s.id,
+          listingId: s.listing_id ?? s.on_chain_listing_id ?? Number(s.id),
           seller: s.seller,
           cardId: s.card_id,
-          price: s.price_wei || parseEther(s.price_eth?.toString() || '0').toString(),
+          priceEth: typeof s.price === 'number' ? s.price : (typeof s.price_wei === 'string' ? Number(s.price_wei)/1e18 : 0),
+          price: typeof s.price_wei === 'string' ? s.price_wei : (typeof s.price === 'number' ? BigInt(Math.floor(s.price * 1e18)).toString() : '0'),
           card_name: s.card_name,
           card_img: s.card_img,
           tier: s.tier || 'common',
           set_id: s.set_id,
+          active: !!s.active,
         }))
         setListings(supabaseListings)
       } else {
