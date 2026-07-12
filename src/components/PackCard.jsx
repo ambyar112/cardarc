@@ -130,8 +130,7 @@ export default function PackCard({ game, count, onClick, loading }) {
   return (
     <button
       onClick={onClick}
-      disabled={loading}
-      className="group relative rounded-3xl overflow-hidden text-left transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] disabled:opacity-50"
+      className="group relative rounded-3xl overflow-hidden text-left transition-all duration-300 hover:scale-[1.03] active:scale-[0.98]"
       style={{
         background: theme.gradient,
         border: `2px solid ${theme.accent}30`,
