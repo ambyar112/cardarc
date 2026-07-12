@@ -345,7 +345,7 @@ export async function saveListingToSupabase(listing) {
   try {
     const safePrice = validatePrice(listing.priceEth)
     const safeOnChainId = validateOnChainId(listing.listingId)
-    const { error } = await supabase.from('marketplace').insert({
+    const { error } = await supabase.from('marketplace_listings').insert({
       on_chain_listing_id: safeOnChainId,
       seller:     normalizeWallet(listing.seller),
       card_id:    sanitizeText(listing.cardId, 100),
@@ -368,23 +368,23 @@ export async function saveListingToSupabase(listing) {
 
 export async function markListingSold(onChainListingId, buyerWallet) {
   await supabase
-    .from('marketplace')
+    .from('marketplace_listings')
     .update({ status: 'sold', buyer: normalizeWallet(buyerWallet) })
     .eq('on_chain_listing_id', validateOnChainId(onChainListingId))
-    .eq('status', 'active') // only update active listings
+    .eq('status', 'active')
 }
 
 export async function markListingCancelled(onChainListingId) {
   await supabase
-    .from('marketplace')
+    .from('marketplace_listings')
     .update({ status: 'cancelled' })
     .eq('on_chain_listing_id', validateOnChainId(onChainListingId))
-    .eq('status', 'active') // only update active listings
+    .eq('status', 'active')
 }
 
 export async function getActiveListingsFromSupabase(limit = 50) {
   const { data } = await supabase
-    .from('marketplace')
+    .from('marketplace_listings')
     .select('*')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
@@ -394,7 +394,7 @@ export async function getActiveListingsFromSupabase(limit = 50) {
 
 export async function getMarketplaceHistory(limit = 30) {
   const { data } = await supabase
-    .from('marketplace')
+    .from('marketplace_listings')
     .select('*')
     .in('status', ['sold', 'cancelled'])
     .order('created_at', { ascending: false })
@@ -404,7 +404,7 @@ export async function getMarketplaceHistory(limit = 30) {
 
 export async function getMyListings(wallet) {
   const { data } = await supabase
-    .from('marketplace')
+    .from('marketplace_listings')
     .select('*')
     .eq('seller', normalizeWallet(wallet))
     .eq('status', 'active')
