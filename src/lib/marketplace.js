@@ -239,8 +239,7 @@ export async function fetchOnChainListings(maxCount = 50) {
       functionName: 'nextListingId',
     })
     
-    const totalListings = Number(nextId) - 1 // nextListingId is always 1 ahead
-    if (totalListings <= 0) return [] // No listings yet
+    const totalListings = Math.max(0, Number(nextId)) // align with id starting at 1
     
     // Determine how many to fetch (cap at maxCount)
     const fetchCount = Math.min(totalListings, maxCount)
