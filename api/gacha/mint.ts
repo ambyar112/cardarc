@@ -54,18 +54,31 @@ async function upsertCollectionRecord(
     'dbs-bt1-001': 'Son Goku',
   };
 
-  const imgMap: Record<string, string> = {
-    'swsh8-123': 'https://assets.tcgdex.net/en/swsh/swsh8/123/high.webp',
-    'sv02-087': 'https://assets.tcgdex.net/en/sv/sv02/087/high.webp',
-    'ygo-89631139': 'https://images.ygoprodeck.com/images/cards/89631139.jpg',
-    'ygo-46986414': 'https://images.ygoprodeck.com/images/cards/46986414.jpg',
-    'dbs-bt1-001': 'https://www.dbs-cardgame.com/fw/images/cards/card/en/BT1-001_f.webp',
-  };
-
   const cardName = cardNameMap[cardId] || cardId;
-  const cardImg = imgMap[cardId] || 'https://cardarc.vercel.app/favicon.svg';
+
+  // Auto-generate card_img from card_id/set_id (no hardcode needed)
+  function buildCardImg(id: string, set: string): string {
+    if (set === 'yugioh') {
+      const num = id.replace(/^ygo-/, '')
+      if (/^\d+$/.test(num)) return `https://images.ygoprodeck.com/images/cards/${num}.jpg`
+    }
+    if (set === 'pokemon') {
+      // card_id like sv04-183 → https://assets.tcgdex.net/en/sv/sv04/183/high.webp
+      const m = id.match(/^([a-z0-9]+)-(\d+)$/i)
+      if (m) return `https://assets.tcgdex.net/en/${m[1].toLowerCase()}/${m[1].toLowerCase()}${m[2]}/high.webp`
+    }
+    if (set === 'dragonball') {
+      // best-effort dbs-cardgame pattern
+      const m = id.match(/^dbs-(.+)$/i)
+      if (m) return `https://www.dbs-cardgame.com/fw/images/cards/card/en/${m[1].toUpperCase()}.webp`
+    }
+    // fallback: local SVG placeholder (always renders)
+    return `/api/card-img?name=${encodeURIComponent(cardName)}&set=${encodeURIComponent(set)}&tier=${encodeURIComponent(tier)}`
+  }
+
   const safeTier = ['legendary','epic','rare','common'].includes(tier) ? tier : 'common';
   const safeSet = ['pokemon','yugioh','dragonball'].includes(set_id) ? set_id : 'pokemon';
+  const cardImg = buildCardImg(cardId, safeSet);
 
   const { error } = await supabaseAdmin
     .from('collection')
