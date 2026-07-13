@@ -27,3 +27,8 @@ dist-ssr
 .vercel/output
 .env*
 .env.local
+
+# Local junk
+arcard
+package-lock.json
+supabase_migration_listings_view.sql

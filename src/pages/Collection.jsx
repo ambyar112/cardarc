@@ -30,25 +30,19 @@ export default function Collection() {
   useEffect(() => {
     async function load() {
       setLoading(true)
-      if (!isConnected || !address) {
-        setCards([])
-        setLoading(false)
-        return
-      }
-
       let collection = []
-      if (walletClient) {
-        try {
-          const result = await api.getMyCollection(walletClient, address)
-          if (result?.success && Array.isArray(result.data)) {
-            collection = result.data
-          }
-        } catch (e) {
-          console.warn('Authenticated collection read failed, fallback to Supabase direct', e.message)
-          collection = await getCollection(address)
+      try {
+        const result = await api.getMyCollection(null, address)
+        if (result?.success && Array.isArray(result.data)) {
+          collection = result.data
         }
-      } else {
-        collection = await getCollection(address)
+      } catch (e) {
+        try {
+          const r = await fetch('/api/public/collection').then(x => x.json()).catch(() => ({ data: [] }))
+          collection = r?.data || []
+        } catch {
+          collection = []
+        }
       }
 
       if (collection.length > 0) {

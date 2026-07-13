@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useWalletClient } from 'wagmi'
 import { useNavigate } from 'react-router-dom'
-import { getCollection, getGachaLog, upsertProfile, getRealLeaderboard } from '../lib/supabase'
+import { getGachaLog, upsertProfile, getRealLeaderboard } from '../lib/supabase'
 import CardItem from '../components/CardItem'
 import ListModal from '../components/ListModal'
 
@@ -18,9 +18,25 @@ const GAME_FILTERS = [
 
 export default function Profile() {
   const { address, isConnected } = useAccount()
+  const { data: walletClient } = useWalletClient()
   const navigate = useNavigate()
+  const safeAddress = address || '0x33552dec0bec4241e16311b28229875354ca362a'
+  const safeConnected = Boolean(isConnected && address)
+  const [renderErr, setRenderErr] = useState(null)
 
-  const [tab, setTab]           = useState('collection') // 'collection' | 'overview'
+  if (renderErr) {
+    return (
+      <div className="pt-24 px-4 max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="text-5xl">⚠️</div>
+        <h2 className="font-display text-xl font-bold text-on-surface">Profile Error</h2>
+        <p className="font-body text-on-surface-variant text-sm text-center">{String(renderErr)}</p>
+        <button onClick={() => setRenderErr(null)} className="px-4 py-2 rounded-lg bg-white/10 text-xs">Retry</button>
+      </div>
+    )
+  }
+
+  try {
+  const [tab, setTab]           = useState('collection')
   const [stats, setStats]       = useState(null)
   const [cards, setCards]       = useState([])
   const [log, setLog]           = useState([])
@@ -32,26 +48,27 @@ export default function Profile() {
   const [selected, setSelected] = useState(null)
   const [listingCard, setListingCard] = useState(null)
 
-  // Collection filters
   const [page, setPage]             = useState(0)
   const [tierFilter, setTierFilter] = useState('all')
   const [gameFilter, setGameFilter] = useState('all')
   const [search, setSearch]         = useState('')
 
   useEffect(() => {
-    if (!isConnected || !address) { setLoading(false); return }
     let isMounted = true
     async function load() {
       console.log('[PROFILE][DEPLOY_MARKER] load start', new Date().toISOString())
       if (isMounted) setLoading(true)
       try {
         const [collection, pullLog, board] = await Promise.all([
-          walletClient ? api.getMyCollection(walletClient, address).then(r => r?.data || []).catch(() => getCollection(address)) : getCollection(address),
+          api.getMyCollection(null, address).then(r => r?.data || []).catch(async () => {
+            const r = await fetch('/api/public/collection').then(x => x.json()).catch(() => ([]))
+            return r?.data || []
+          }),
           getGachaLog(address, 10).catch(() => []),
           getRealLeaderboard().catch(() => []),
         ])
         if (!isMounted) return
-        const profile = board.find(p => p.wallet?.toLowerCase() === address.toLowerCase())
+        const profile = board.find(p => p.wallet?.toLowerCase() === (address || '0x33552dec0bec4241e16311b28229875354ca362a').toLowerCase())
         setUsername(profile?.username || '')
         setCards(collection.map(c => ({
           id: c.card_id, name: c.card_name, img: c.card_img, tier: c.tier,
@@ -80,10 +97,9 @@ export default function Profile() {
     }
     load()
     return () => { isMounted = false }
-  }, [isConnected, address, walletClient])
+  }, [safeConnected, address, walletClient])
 
   async function saveUsername() {
-    // ✅ FIX VULN-07: Strict allowlist validation — only alphanumeric, underscore, dash
     const trimmed = username.trim()
     if (!trimmed || !address) return
     if (!/^[a-zA-Z0-9_\-]{1,20}$/.test(trimmed)) {
@@ -97,7 +113,6 @@ export default function Profile() {
     setEditing(false)
   }
 
-  // Filtered cards for collection tab
   const filtered = cards.filter(c => {
     const t = tierFilter === 'all' || c.tier === tierFilter
     const s = !search || c.name?.toLowerCase().includes(search.toLowerCase())
@@ -110,13 +125,15 @@ export default function Profile() {
   const totalPages = Math.ceil(filtered.length / PER)
   const pageCards  = filtered.slice(page * PER, (page + 1) * PER)
 
-  if (!isConnected) return (
-    <div className="pt-24 px-4 max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[60vh] gap-4">
-      <div className="text-5xl">🔐</div>
-      <h2 className="font-display text-xl font-bold text-on-surface">Connect Wallet</h2>
-      <p className="font-body text-on-surface-variant text-sm text-center">Connect wallet untuk melihat profil dan koleksi kamu.</p>
-    </div>
-  )
+  if (!safeConnected) {
+    return (
+      <div className="pt-24 px-4 max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <div className="text-5xl">🌐</div>
+        <h2 className="font-display text-xl font-bold text-on-surface">Public Profile</h2>
+        <p className="font-body text-on-surface-variant text-sm text-center">Menampilkan profil publik. Hubungkan wallet untuk melihat koleksi kamu sendiri.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="pt-24 px-4 lg:px-12 pb-12 max-w-[1200px] mx-auto flex flex-col gap-6">
@@ -202,7 +219,6 @@ export default function Profile() {
       {/* Overview tab */}
       {!loading && tab === 'overview' && stats && (
         <>
-          {/* Game breakdown */}
           <div className="glass rounded-xl p-5">
             <h3 className="font-display text-sm font-semibold text-on-surface mb-4">Collection by Game</h3>
             <div className="grid grid-cols-3 gap-3">
@@ -225,7 +241,6 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Recent pulls */}
           <div className="glass rounded-xl overflow-hidden">
             <div className="p-4 border-b border-white/10 flex items-center justify-between">
               <h3 className="font-display text-sm font-semibold text-on-surface flex items-center gap-2">
@@ -264,7 +279,6 @@ export default function Profile() {
       {/* Collection tab */}
       {!loading && tab === 'collection' && (
         <div className="glass rounded-xl overflow-hidden">
-          {/* Toolbar */}
           <div className="p-4 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-surface/20">
             <div className="flex gap-2 flex-wrap items-center">
               <div className="flex gap-1 pr-2 border-r border-white/10">
@@ -295,7 +309,6 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Grid */}
           <div className="p-6 min-h-[300px]">
             {cards.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -314,7 +327,6 @@ export default function Profile() {
             )}
           </div>
 
-          {/* Pagination */}
           {filtered.length > PER && (
             <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
               <span className="font-mono text-[11px] text-on-surface-variant">
@@ -332,30 +344,22 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Card detail modal — vertical on mobile, horizontal on sm+ */}
+      {/* Card detail modal */}
       {selected && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4"
           onClick={() => setSelected(null)}>
           <div className="relative rounded-2xl overflow-hidden flex flex-col sm:flex-row w-full"
-            style={{
-              maxWidth: 640, maxHeight: '92vh',
-              background: 'linear-gradient(135deg,#0d1424,#07080f)',
-              border: `1px solid ${
-                selected.tier==='legendary'?'rgba(245,200,76,.4)':
-                selected.tier==='epic'?'rgba(167,139,250,.4)':
-                selected.tier==='rare'?'rgba(22,230,255,.4)':'rgba(255,255,255,.15)'
-              }`,
-            }}
+            style={{ maxWidth:640, maxHeight:'92vh', background:'linear-gradient(135deg,#0d1424,#07080f)', border:`1px solid ${
+              selected.tier==='legendary'?'rgba(245,200,76,.4)':selected.tier==='epic'?'rgba(167,139,250,.4)':selected.tier==='rare'?'rgba(22,230,255,.4)':'rgba(255,255,255,.15)'
+            }`}}
             onClick={e => e.stopPropagation()}>
 
-            {/* Close button */}
             <button onClick={() => setSelected(null)}
               className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm"
               style={{ background:'rgba(255,255,255,.1)', color:'#9aa3b2', border:'1px solid rgba(255,255,255,.15)' }}>✕</button>
 
-            {/* Top/Left — card image (top on mobile, left on sm+) */}
             <div className="flex-shrink-0 flex items-center justify-center p-4 sm:p-6"
-              style={{ background: 'rgba(255,255,255,.02)' }}>
+              style={{ background:'rgba(255,255,255,.02)' }}>
               <div className="rounded-xl overflow-hidden mx-auto"
                 style={{ width:'min(160px,45vw)', height:'min(224px,63vw)', boxShadow:'0 16px 48px rgba(0,0,0,.7)' }}>
                 {selected.img
@@ -370,29 +374,21 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Right — info */}
             <div className="flex-1 flex flex-col justify-center gap-4 py-6 pr-6 pl-2 overflow-y-auto">
-
-              {/* Game + tier */}
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-[9px] uppercase px-2 py-0.5 rounded"
                   style={{ background:'rgba(255,255,255,.07)', color:'#9aa3b2' }}>
                   {selected.setId==='yugioh'?'⚔️ YGO':selected.setId==='dragonball'?'🔥 DBS':'⚡ PKM'}
                 </span>
                 <span className={`font-mono text-[9px] font-bold px-2 py-0.5 rounded border uppercase ${
-                  selected.tier==='legendary'?'bg-secondary/20 text-secondary border-secondary/30':
-                  selected.tier==='epic'?'bg-primary/20 text-primary border-primary/30':
-                  selected.tier==='rare'?'bg-tertiary/20 text-tertiary border-tertiary/30':
-                  'bg-white/10 text-on-surface border-white/10'
+                  selected.tier==='legendary'?'bg-secondary/20 text-secondary border-secondary/30':selected.tier==='epic'?'bg-primary/20 text-primary border-primary/30':selected.tier==='rare'?'bg-tertiary/20 text-tertiary border-tertiary/30':'bg-white/10 text-on-surface border-white/10'
                 }`}>{selected.tier}</span>
               </div>
 
-              {/* Name */}
               <h3 className="font-display font-bold text-on-surface leading-tight" style={{ fontSize:18 }}>
                 {selected.name}
               </h3>
 
-              {/* Stats */}
               {(() => {
                 const items = []
                 if (selected.setId === 'yugioh') {
@@ -414,10 +410,8 @@ export default function Profile() {
                   if (pw && pw !== '—') items.push({ label:'Power', value:pw, color:'text-orange-400' })
                   if (cl && cl !== '—') items.push({ label:'Color', value:cl, color:'text-on-surface' })
                 } else {
-                  if (selected.hp && selected.hp !== '—')
-                    items.push({ label:'HP', value:selected.hp, color:'text-red-400' })
-                  if (selected.types && selected.types !== '—')
-                    items.push({ label:'Type', value:selected.types, color:'text-on-surface' })
+                  if (selected.hp && selected.hp !== '—') items.push({ label:'HP', value:selected.hp, color:'text-red-400' })
+                  if (selected.types && selected.types !== '—') items.push({ label:'Type', value:selected.types, color:'text-on-surface' })
                 }
                 if (!items.length) return null
                 return (
@@ -432,7 +426,6 @@ export default function Profile() {
                 )
               })()}
 
-              {/* NFT */}
               <div className="rounded-lg p-2.5 flex items-center gap-2"
                 style={{ background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.07)' }}>
                 <span className="text-base flex-shrink-0">🔗</span>
@@ -442,7 +435,6 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-2">
                 <button
                   onClick={() => { setSelected(null); setListingCard(selected) }}
@@ -470,7 +462,12 @@ export default function Profile() {
           walletClient={walletClient}
           onClose={() => setListingCard(null)}
           onListed={() => setListingCard(null)}
-        />)}
+        />
+      )}
     </div>
   )
+  } catch (e) {
+    setRenderErr(e)
+    return null
+  }
 }
