@@ -8,24 +8,9 @@ export default defineConfig({
   build: {
     // Enable source maps for production debugging (hidden from browser DevTools by default)
     sourcemap: 'hidden',
-    
+
     rollupOptions: {
       output: {
-        // Explicit chunk splitting — reduces initial bundle size
-        manualChunks: {
-          // Web3 core libraries
-          'web3-core':    ['wagmi', 'viem'],
-          'web3-reown':   ['@reown/appkit', '@reown/appkit-adapter-wagmi'],
-          'web3-query':   ['@tanstack/react-query'],
-          
-          // Backend/database
-          'supabase':     ['@supabase/supabase-js'],
-          
-          // React ecosystem
-          'react-core':   ['react', 'react-dom'],
-          'react-router': ['react-router-dom'],
-        },
-        
         // Optimize chunk file naming for better caching
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
