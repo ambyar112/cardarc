@@ -23,7 +23,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data, error } = await supabaseAdmin
       .from('collection')
-      .select('card_id, card_name, card_img, tier, set_id, local_id, hp, types, rarity, atk, def, level, created_at')
+      .select('wallet, card_id, card_name, card_img, tier, set_id, local_id, hp, types, rarity, atk, def, level, created_at')
       .order('created_at', { ascending: false })
       .limit(500)
 
