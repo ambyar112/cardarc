@@ -64,8 +64,14 @@ async function upsertCollectionRecord(
     }
     if (set === 'pokemon') {
       // card_id like sv04-183 → https://assets.tcgdex.net/en/sv/sv04/183/high.webp
-      const m = id.match(/^([a-z0-9]+)-(\d+)$/i)
-      if (m) return `https://assets.tcgdex.net/en/${m[1].toLowerCase()}/${m[1].toLowerCase()}${m[2]}/high.webp`
+      const m = id.match(/^([a-z]+)(\d+)-(\d+)$/i)
+      if (m) return `https://assets.tcgdex.net/en/${m[1].toLowerCase()}/${m[1].toLowerCase()}${m[2]}/${m[3]}/high.webp`
+      // fallback for non-standard like swsh8-123
+      const m2 = id.match(/^([a-z0-9]+)-(\d+)$/i)
+      if (m2) {
+        const g = m2[1].toLowerCase()
+        return `https://assets.tcgdex.net/en/${g}/${g}${m2[2]}/high.webp`
+      }
     }
     if (set === 'dragonball') {
       // best-effort dbs-cardgame pattern
