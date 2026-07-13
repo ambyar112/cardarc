@@ -60,7 +60,7 @@ async function upsertCollectionRecord(
   function buildCardImg(id: string, set: string): string {
     if (set === 'yugioh') {
       const num = id.replace(/^ygo-/, '')
-      if (/^\d+$/.test(num)) return `https://images.ygoprodeck.com/images/cards/${num}.jpg`
+      if (/^\d+$/.test(num)) return `/api/ygo-img?id=${num}`
     }
     if (set === 'pokemon') {
       // card_id like sv04-183 → https://assets.tcgdex.net/en/sv/sv04/183/high.webp
