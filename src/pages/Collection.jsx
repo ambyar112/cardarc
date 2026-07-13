@@ -32,7 +32,7 @@ export default function Collection() {
       setLoading(true)
       let collection = []
       try {
-        const result = await api.getMyCollection(null, address)
+        const result = await getMyCollection(null, address)
         if (result?.success && Array.isArray(result.data)) {
           collection = result.data
         }
