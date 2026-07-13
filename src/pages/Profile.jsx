@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAccount, useWalletClient } from 'wagmi'
 import { useNavigate } from 'react-router-dom'
 import { getGachaLog, upsertProfile, getRealLeaderboard } from '../lib/supabase'
+import { api } from '../lib/apiClient'
 import CardItem from '../components/CardItem'
 import ListModal from '../components/ListModal'
 
